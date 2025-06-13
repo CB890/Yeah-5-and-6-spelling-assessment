@@ -1,0 +1,27 @@
+{
+  "name": "spelling-assessment-y3",
+  "version": "1.0.0",
+  "description": "Interactive Spelling Assessment for Year 5/6 students with Supabase backend",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx live-server --port=3000",
+    "build": "echo 'Static site - no build step needed'",
+    "test": "echo 'No tests specified yet'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "keywords": [
+    "spelling",
+    "assessment",
+    "education",
+    "year5",
+    "year6",
+    "supabase"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+} 

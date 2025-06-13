@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Teacher Dashboard - Spelling Assessment</title>
+    
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .connection-status {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid #eee;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 5px solid #4CAF50;
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .section {
+            padding: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .quiz-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .quiz-table th,
+        .quiz-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .quiz-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .quiz-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .score {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+        }
+
+        .score.excellent { background: #4CAF50; }
+        .score.good { background: #2196F3; }
+        .score.fair { background: #FF9800; }
+        .score.needs-work { background: #f44336; }
+
+        .word-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .word-stat {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .word-stat.difficult {
+            border-left-color: #f44336;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            text-align: center;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn.secondary {
+            background: #2196F3;
+        }
+
+        .btn.secondary:hover {
+            background: #1976D2;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .school-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .school-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>🎯 Teacher Dashboard</h1>
+            <p>Monitor student progress and spelling performance</p>
+        </div>
+
+        <div id="connectionStatus" class="connection-status disconnected">
+            🔌 Connecting to database...
+        </div>
+
+        <div id="schoolInfo" class="school-info" style="display: none;">
+            <h3 id="schoolName">Loading school...</h3>
+            <p id="schoolCode">School Code: ---</p>
+        </div>
+
+        <div id="loadingSpinner" class="loading">
+            <div class="spinner"></div>
+            <p>Loading quiz data from database...</p>
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalQuizzes">0</div>
+                    <div class="stat-label">Total Quizzes</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="averageScore">0%</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="averageTime">0m</div>
+                    <div class="stat-label">Average Time</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📊 Recent Quiz Results</h2>
+                <div id="recentQuizzes">
+                    <div class="no-data">No quiz results found yet. Students need to complete some quizzes first!</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔤 Word Difficulty Analysis</h2>
+                <div id="wordStats">
+                    <div class="no-data">No word statistics available yet.</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
+                <button class="btn secondary" onclick="exportData()">📁 Export Results</button>
+                <button class="btn secondary" onclick="window.open('index.html', '_blank')">🎯 Launch Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the database configuration -->
+    <script src="supabase-config.js"></script>
+
+    <script>
+        // 🎯 Dashboard controller
+        class TeacherDashboard {
+            constructor() {
+                this.quizData = [];
+                this.wordStats = [];
+                this.isConnected = false;
+            }
+
+            async init() {
+                console.log('🚀 Initializing Teacher Dashboard...');
+                
+                try {
+                    // Wait for database service to be ready
+                    await this.waitForDatabaseService();
+                    
+                    // Update connection status
+                    this.updateConnectionStatus(true);
+                    
+                    // Load school information
+                    this.showSchoolInfo();
+                    
+                    // Load all the quiz data
+                    await this.loadDashboardData();
+                    
+                    console.log('✅ Dashboard ready!');
+                    
+                } catch (error) {
+                    console.error('❌ Dashboard initialization failed:', error);
+                    this.updateConnectionStatus(false);
+                    this.hideLoading();
+                }
+            }
+
+            async waitForDatabaseService() {
+                let attempts = 0;
+                const maxAttempts = 10;
+                
+                while (attempts < maxAttempts) {
+                    if (window.databaseService && window.databaseService.isConnected) {
+                        console.log('✅ Database service is ready!');
+                        this.isConnected = true;
+                        return;
+                    }
+                    
+                    console.log(`⏳ Waiting for database service... (${attempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                }
+                
+                throw new Error('Database service not available');
+            }
+
+            updateConnectionStatus(connected) {
+                const statusEl = document.getElementById('connectionStatus');
+                
+                if (connected) {
+                    statusEl.className = 'connection-status connected';
+                    statusEl.innerHTML = '✅ Connected to database successfully!';
+                } else {
+                    statusEl.className = 'connection-status disconnected';
+                    statusEl.innerHTML = '❌ Database connection failed - showing offline mode';
+                }
+            }
+
+            showSchoolInfo() {
+                const schoolInfo = document.getElementById('schoolInfo');
+                const schoolName = document.getElementById('schoolName');
+                const schoolCode = document.getElementById('schoolCode');
+                
+                if (window.databaseService && window.databaseService.currentSchool) {
+                    const school = window.databaseService.currentSchool;
+                    schoolName.textContent = `🏫 ${school.school_name}`;
+                    schoolCode.textContent = `School Code: ${school.school_code}`;
+                    schoolInfo.style.display = 'block';
+                }
+            }
+
+            async loadDashboardData() {
+                try {
+                    console.log('📊 Loading quiz data...');
+                    
+                    // Get quiz sessions from database with basic query
+                    const { data: quizData, error: quizError } = await window.databaseService.supabase
+                        .from('quiz_sessions')
+                        .select('*')
+                        .eq('school_id', window.databaseService.currentSchool.id)
+                        .order('created_at', { ascending: false })
+                        .limit(50);
+
+                    if (quizError) {
+                        throw quizError;
+                    }
+
+                    this.quizData = quizData || [];
+                    console.log('📈 Loaded', this.quizData.length, 'quiz sessions');
+                    
+                    // Debug: Show sample quiz data with detailed structure
+                    if (this.quizData.length > 0) {
+                        console.log('📋 Sample quiz data:', this.quizData[0]);
+                        console.log('📋 Quiz columns available:', Object.keys(this.quizData[0]));
+                        console.log('📋 First quiz values:', {
+                            student_name: this.quizData[0].student_name,
+                            total_correct: this.quizData[0].total_correct,
+                            total_questions: this.quizData[0].total_questions,
+                            paragraph_title: this.quizData[0].paragraph_title,
+                            created_at: this.quizData[0].created_at
+                        });
+                        
+                        // Show all column names and values for debugging
+                        console.log('🔍 ALL COLUMNS AND VALUES:');
+                        Object.keys(this.quizData[0]).forEach(key => {
+                            console.log(`  ${key}: ${this.quizData[0][key]}`);
+                        });
+                    }
+                    
+                    // Try to get word statistics with detailed debugging
+                    try {
+                        console.log('🔍 Checking word_responses table...');
+                        
+                        const { data: wordData, error: wordError } = await window.databaseService.supabase
+                            .from('word_responses')
+                            .select('*')
+                            .limit(100);
+
+                        console.log('📊 Word responses query result:', { wordData, wordError });
+                        console.log('📊 Word data length:', wordData?.length || 0);
+
+                        if (!wordError && wordData && wordData.length > 0) {
+                            console.log('📊 Sample word response:', wordData[0]);
+                            this.wordStats = this.calculateWordStats(wordData);
+                            console.log('🔤 Calculated word stats:', this.wordStats);
+                        } else {
+                            this.wordStats = [];
+                            console.log('🔤 No word data found. Error:', wordError?.message || 'No error, just no data');
+                        }
+                    } catch (error) {
+                        this.wordStats = [];
+                        console.log('🔤 Word stats error:', error.message);
+                    }
+                    
+                    // Update the dashboard
+                    this.updateStats();
+                    this.updateRecentQuizzes();
+                    this.updateWordStats();
+                    
+                    // Show the dashboard
+                    this.hideLoading();
+                    this.showDashboard();
+                    
+                } catch (error) {
+                    console.error('❌ Failed to load dashboard data:', error);
+                    console.error('Error details:', error);
+                    this.hideLoading();
+                    this.showErrorMessage(`Failed to load quiz data: ${error.message}`);
+                }
+            }
+
+            updateStats() {
+                if (!this.quizData.length) return;
+
+                // Calculate statistics with your actual database columns
+                const totalQuizzes = this.quizData.length;
+                const uniqueStudents = new Set(this.quizData.map(q => q.student_name)).size;
+                
+                // Calculate average score (only if we have the data)
+                let avgScore = 0;
+                const validQuizzes = this.quizData.filter(q => q.total_correct !== null && q.total_questions !== null && q.total_questions > 0);
+                
+                if (validQuizzes.length > 0) {
+                    avgScore = Math.round(
+                        validQuizzes.reduce((sum, q) => sum + (q.total_correct / q.total_questions * 100), 0) / validQuizzes.length
+                    );
+                }
+                
+                console.log('📊 Score calculation:', { totalQuizzes, validQuizzes: validQuizzes.length, avgScore });
+
+                // Skip average time since total_time_seconds doesn't exist in your database
+                const avgTime = 'N/A';
+
+                // Update the display
+                document.getElementById('totalQuizzes').textContent = totalQuizzes;
+                document.getElementById('totalStudents').textContent = uniqueStudents;
+                document.getElementById('averageScore').textContent = avgScore > 0 ? `${avgScore}%` : 'N/A';
+                document.getElementById('averageTime').textContent = avgTime;
+            }
+
+            updateRecentQuizzes() {
+                const container = document.getElementById('recentQuizzes');
+                
+                if (!this.quizData.length) {
+                    container.innerHTML = '<div class="no-data">No quiz results found yet. Students need to complete some quizzes first!</div>';
+                    return;
+                }
+
+                // Create table
+                let html = `
+                    <table class="quiz-table">
+                        <thead>
+                            <tr>
+                                <th>👤 Student</th>
+                                <th>📅 Date</th>
+                                <th>🎯 Score</th>
+                                <th>⚡ First Attempt</th>
+                                <th>⏱️ Time</th>
+                                <th>📖 Paragraph</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                // Show most recent 20 quizzes
+                const recentQuizzes = this.quizData.slice(0, 20);
+                
+                recentQuizzes.forEach(quiz => {
+                    // Better score calculation with debugging
+                    let score = 0;
+                    if (quiz.total_correct !== null && quiz.total_questions !== null && quiz.total_questions > 0) {
+                        score = Math.round((quiz.total_correct / quiz.total_questions) * 100);
+                    }
+                    
+                    const scoreClass = this.getScoreClass(score);
+                    const date = new Date(quiz.created_at).toLocaleDateString();
+                    
+                    // Debug log for each quiz
+                    console.log('Quiz data:', {
+                        student: quiz.student_name,
+                        correct: quiz.total_correct,
+                        total: quiz.total_questions,
+                        calculatedScore: score
+                    });
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${quiz.student_name}</strong></td>
+                            <td>${date}</td>
+                            <td><span class="score ${scoreClass}">${score}%</span></td>
+                            <td>${quiz.total_correct || 0}/${quiz.total_questions || 0}</td>
+                            <td>N/A</td>
+                            <td>${quiz.paragraph_title || 'Unknown'}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            updateWordStats() {
+                const container = document.getElementById('wordStats');
+                
+                if (!this.wordStats.length) {
+                    container.innerHTML = '<div class="no-data">No word statistics available yet.</div>';
+                    return;
+                }
+
+                let html = '<div class="word-stats">';
+                
+                // Show the 20 most difficult words
+                const difficultWords = this.wordStats.slice(0, 20);
+                
+                difficultWords.forEach(word => {
+                    const isDifficult = word.successRate < 70;
+                    
+                    html += `
+                        <div class="word-stat ${isDifficult ? 'difficult' : ''}">
+                            <h4>${word.word}</h4>
+                            <p><strong>Success Rate:</strong> ${word.successRate}%</p>
+                            <p><strong>First Try:</strong> ${word.firstAttemptRate}%</p>
+                            <p><strong>Attempts:</strong> ${word.totalAttempts}</p>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+            calculateWordStats(wordData) {
+                const wordStats = {};
+                
+                wordData.forEach(response => {
+                    const word = response.correct_word;
+                    if (!wordStats[word]) {
+                        wordStats[word] = {
+                            word: word,
+                            totalAttempts: 0,
+                            totalCorrect: 0
+                        };
+                    }
+                    
+                    wordStats[word].totalAttempts++;
+                    if (response.is_correct) {
+                        wordStats[word].totalCorrect++;
+                    }
+                });
+
+                // Convert to array and add success rates
+                const statsArray = Object.values(wordStats).map(stat => ({
+                    ...stat,
+                    successRate: Math.round((stat.totalCorrect / stat.totalAttempts) * 100)
+                }));
+
+                // Sort by difficulty (lowest success rate first)
+                return statsArray.sort((a, b) => a.successRate - b.successRate);
+            }
+
+            getScoreClass(score) {
+                if (score >= 90) return 'excellent';
+                if (score >= 75) return 'good';
+                if (score >= 60) return 'fair';
+                return 'needs-work';
+            }
+
+            hideLoading() {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+
+            showDashboard() {
+                document.getElementById('dashboardContent').style.display = 'block';
+            }
+
+            showErrorMessage(message) {
+                const container = document.getElementById('dashboardContent');
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div class="no-data">
+                        <h3>❌ ${message}</h3>
+                        <p>Please check your database connection and try again.</p>
+                        <button class="btn" onclick="location.reload()">🔄 Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 🌍 Global functions
+        async function refreshData() {
+            console.log('🔄 Refreshing dashboard data...');
+            const dashboard = window.teacherDashboard;
+            
+            if (dashboard && dashboard.isConnected) {
+                document.getElementById('loadingSpinner').style.display = 'block';
+                document.getElementById('dashboardContent').style.display = 'none';
+                
+                await dashboard.loadDashboardData();
+            } else {
+                alert('❌ Database not connected. Please refresh the page.');
+            }
+        }
+
+        async function exportData() {
+            console.log('📁 Exporting quiz data...');
+            
+            if (window.databaseService && window.databaseService.isConnected) {
+                try {
+                    const quizData = await window.databaseService.getSchoolQuizzes(1000);
+                    window.databaseService.exportQuizDataAsCSV(quizData);
+                } catch (error) {
+                    console.error('Export failed:', error);
+                    alert('❌ Failed to export data: ' + error.message);
+                }
+            } else {
+                alert('❌ Database not connected. Cannot export data.');
+            }
+        }
+
+        // 🚀 Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait a moment for the database service to load
+            setTimeout(async () => {
+                window.teacherDashboard = new TeacherDashboard();
+                await window.teacherDashboard.init();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

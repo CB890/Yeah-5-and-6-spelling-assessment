@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Spelling Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="title-section">
+                    <h1>Interactive Spelling Assessment</h1>
+                    <p class="subtitle">Year 5/6 National Curriculum Spelling Practice</p>
+                </div>
+                <div class="header-actions">
+                    <a href="help-system.html" target="_blank" class="help-link">
+                        ❓ Help
+                    </a>
+                    <a href="teacher-dashboard.html" target="_blank" class="teacher-link">
+                        👩‍🏫 Teacher Dashboard
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main id="quiz-container">
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <div class="welcome-content">
+                    <h2>Welcome to Your Spelling Quiz!</h2>
+                    <p>You will read a paragraph and fill in 15 missing spelling words.</p>
+                    <div class="student-info">
+                        <label for="school-select">School:</label>
+                        <select id="school-select">
+                            <option value="KENT001">Kent College</option>
+                            <option value="VICT001">Victory Heights Primary School</option>
+                        </select>
+                        
+                        <label for="student-name">Student Name:</label>
+                        <input type="text" id="student-name" placeholder="Enter your name" required>
+                    </div>
+                    <button id="start-btn" class="btn btn-primary">Start Quiz</button>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="screen">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="progress-text" class="progress-text">Question 1 of 15</p>
+                </div>
+
+                <div class="paragraph-container">
+                    <h3>Read the paragraph and fill in the missing words:</h3>
+                    <div class="audio-controls">
+                        <button id="play-paragraph" class="btn btn-audio">🔊 Listen to Paragraph</button>
+                    </div>
+                    <div id="paragraph-display" class="paragraph-text"></div>
+                </div>
+
+                <div class="answers-container">
+                    <h4>Fill in the missing words:</h4>
+                    <div id="answer-inputs" class="answer-grid"></div>
+                    <div class="quiz-controls">
+                        <button id="submit-answer" class="btn btn-primary">Submit Answer</button>
+                        <button id="next-question" class="btn btn-secondary" style="display: none;">Next Question</button>
+                        <a href="help-system.html" target="_blank" class="btn btn-small" style="background: #ffc107; color: white;">❓ Need Help?</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="results-screen" class="screen">
+                <div class="results-content">
+                    <h2>Quiz Complete!</h2>
+                    <div id="results-summary"></div>
+                    <div id="results-details"></div>
+                    <div class="results-actions">
+                        <button id="restart-quiz" class="btn btn-primary">Take Another Quiz</button>
+                        <button id="export-results" class="btn btn-secondary">Export Results</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="accessibility.js"></script>
+    <!-- Include Supabase from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="wordbank.js"></script>
+    <script src="data-manager.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

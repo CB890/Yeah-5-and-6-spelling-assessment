@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Settings - Spelling Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .settings-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .settings-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+        }
+
+        .settings-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2rem;
+        }
+
+        .settings-header p {
+            margin: 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .settings-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 2px solid #f0f0f0;
+        }
+
+        .settings-panel h2 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 1.4rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group h3 {
+            margin: 0 0 15px 0;
+            color: #34495e;
+            font-size: 1.1rem;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .setting-item select,
+        .setting-item input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-item select:focus,
+        .setting-item input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            background: #e9ecef;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .checkbox-item.checked {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .time-limit-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .time-limit-controls input[type="number"] {
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .word-bank-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .word-bank-tabs {
+            display: flex;
+            background: #e9ecef;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .word-bank-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .word-bank-tab:hover {
+            background: #dee2e6;
+        }
+
+        .word-bank-tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .word-selection-controls {
+            padding: 15px;
+            background: #f1f3f4;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .words-list {
+            display: none;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .words-list.active {
+            display: block;
+        }
+
+        .word-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .word-item:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+        }
+
+        .word-item input[type="checkbox"] {
+            margin-right: 12px;
+            transform: scale(1.1);
+        }
+
+        .word-item label {
+            flex: 1;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .word-text {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .word-meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-left: 8px;
+        }
+
+        .preview-panel {
+            position: sticky;
+            top: 20px;
+        }
+
+        .preview-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .preview-stat {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-text {
+            display: block;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #3498db;
+            text-transform: capitalize;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .preview-options ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .preview-options li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .navigation-links {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+        }
+
+        .navigation-links a {
+            margin: 0 15px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .navigation-links a:hover {
+            text-decoration: underline;
+        }
+
+        .help-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* Enhanced Mobile-Responsive Design */
+
+        /* Tablet Styles (768px - 1024px) */
+        @media (max-width: 1024px) {
+            .settings-container {
+                padding: 15px;
+            }
+            
+            .settings-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .preview-panel {
+                order: -1; /* Show preview first on tablets */
+            }
+            
+            .btn {
+                min-height: 48px; /* Touch-friendly size */
+                min-width: 48px;
+            }
+        }
+
+        /* Mobile Styles (481px - 768px) */
+        @media (max-width: 768px) {
+            body {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+            
+            .settings-container {
+                padding: 10px 8px;
+            }
+            
+            .settings-header {
+                text-align: center;
+                padding: 20px 10px;
+            }
+            
+            .settings-header h1 {
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }
+            
+            .settings-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .settings-panel, .preview-panel {
+                padding: 20px 15px;
+                border-radius: 12px;
+            }
+            
+            .setting-group {
+                margin-bottom: 25px;
+            }
+            
+            .setting-group h3 {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .setting-item {
+                margin-bottom: 15px;
+            }
+            
+            .setting-item label {
+                font-size: 1rem;
+                margin-bottom: 8px;
+                display: block;
+            }
+            
+            .setting-item select, .setting-item input[type="number"] {
+                width: 100%;
+                font-size: 16px; /* Prevent zoom on iOS */
+                padding: 15px 20px;
+                border-radius: 10px;
+                min-height: 48px;
+                border: 2px solid #ddd;
+                box-sizing: border-box;
+            }
+            
+            .checkbox-group {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .checkbox-item {
+                padding: 15px;
+                border-radius: 10px;
+                background: #f8f9fa;
+                border: 2px solid #e9ecef;
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+                touch-action: manipulation;
+            }
+            
+            .checkbox-item:hover {
+                background: #e9ecef;
+            }
+            
+            .checkbox-item input[type="checkbox"] {
+                transform: scale(1.4);
+                margin-right: 12px;
+                min-width: 20px;
+                min-height: 20px;
+            }
+            
+            .checkbox-item label {
+                font-size: 1rem;
+                margin: 0;
+                flex: 1;
+                cursor: pointer;
+            }
+            
+            .time-limit-controls {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-top: 10px;
+            }
+            
+            .time-limit-controls input {
+                width: 80px;
+                font-size: 16px;
+                padding: 12px 15px;
+                min-height: 44px;
+            }
+            
+            .word-bank-interface {
+                margin-top: 20px;
+            }
+            
+            .difficulty-tabs {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+            
+            .tab-button {
+                padding: 12px 15px;
+                font-size: 1rem;
+                border-radius: 10px;
+                min-height: 48px;
+                text-align: left;
+                touch-action: manipulation;
+            }
+            
+            .word-list {
+                max-height: 250px;
+                overflow-y: auto;
+            }
+            
+            .word-item {
+                padding: 12px 15px;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                touch-action: manipulation;
+            }
+            
+            .word-item input[type="checkbox"] {
+                transform: scale(1.3);
+                margin-right: 10px;
+            }
+            
+            .word-item label {
+                flex: 1;
+                font-size: 1rem;
+                margin: 0;
+                cursor: pointer;
+            }
+            
+            .word-controls {
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .word-controls button {
+                width: 100%;
+                min-height: 44px;
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .preview-panel h2 {
+                font-size: 1.3rem;
+                margin-bottom: 15px;
+            }
+            
+            .preview-info {
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .preview-info h4 {
+                font-size: 1.1rem;
+                margin-bottom: 8px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+                margin-top: 30px;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 15px 20px;
+                font-size: 1rem;
+                min-height: 48px;
+                border-radius: 12px;
+                touch-action: manipulation;
+            }
+            
+            .btn-small {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+            
+            .navigation-links {
+                margin-top: 25px;
+                padding-top: 20px;
+            }
+            
+            .navigation-links a {
+                display: inline-block;
+                padding: 10px 15px;
+                margin: 5px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                color: #3498db;
+                text-decoration: none;
+                font-weight: 600;
+                min-height: 44px;
+                line-height: 24px;
+                touch-action: manipulation;
+            }
+            
+            .help-text {
+                font-size: 0.9rem;
+                margin-top: 8px;
+                line-height: 1.4;
+            }
+        }
+
+        /* Small Mobile Phones (320px - 480px) */
+        @media (max-width: 480px) {
+            .settings-container {
+                padding: 8px 5px;
+            }
+            
+            .settings-header {
+                padding: 15px 8px;
+            }
+            
+            .settings-header h1 {
+                font-size: 1.6rem;
+                margin-bottom: 8px;
+            }
+            
+            .settings-header p {
+                font-size: 0.9rem;
+            }
+            
+            .settings-panel, .preview-panel {
+                padding: 15px 10px;
+            }
+            
+            .setting-group h3 {
+                font-size: 1.1rem;
+                margin-bottom: 12px;
+            }
+            
+            .setting-item select, .setting-item input[type="number"] {
+                padding: 12px 15px;
+                font-size: 16px;
+                min-height: 44px;
+            }
+            
+            .checkbox-item {
+                padding: 12px;
+                min-height: 44px;
+            }
+            
+            .checkbox-item input[type="checkbox"] {
+                transform: scale(1.2);
+                margin-right: 10px;
+            }
+            
+            .checkbox-item label {
+                font-size: 0.9rem;
+            }
+            
+            .time-limit-controls input {
+                width: 70px;
+                padding: 10px 12px;
+                font-size: 16px;
+                min-height: 40px;
+            }
+            
+            .tab-button {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+            
+            .word-item {
+                padding: 10px 12px;
+                min-height: 40px;
+            }
+            
+            .word-item label {
+                font-size: 0.9rem;
+            }
+            
+            .word-controls button {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+                min-height: 40px;
+            }
+            
+            .btn {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+            
+            .btn-small {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+                min-height: 40px;
+            }
+            
+            .navigation-links a {
+                padding: 8px 12px;
+                margin: 3px;
+                font-size: 0.9rem;
+                min-height: 40px;
+                line-height: 24px;
+            }
+            
+            .help-text {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Landscape Orientation Support */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .settings-container {
+                padding: 8px;
+            }
+            
+            .settings-header {
+                padding: 10px 8px;
+            }
+            
+            .settings-header h1 {
+                font-size: 1.4rem;
+                margin-bottom: 5px;
+            }
+            
+            .settings-header p {
+                font-size: 0.8rem;
+                margin-bottom: 10px;
+            }
+            
+            .settings-layout {
+                gap: 15px;
+            }
+            
+            .settings-panel, .preview-panel {
+                padding: 15px;
+            }
+            
+            .setting-group {
+                margin-bottom: 20px;
+            }
+            
+            .setting-group h3 {
+                font-size: 1rem;
+                margin-bottom: 10px;
+            }
+            
+            .checkbox-group {
+                gap: 8px;
+            }
+            
+            .checkbox-item {
+                padding: 10px;
+                min-height: 36px;
+            }
+            
+            .word-list {
+                max-height: 180px;
+            }
+            
+            .action-buttons {
+                flex-direction: row;
+                justify-content: center;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+                min-height: 36px;
+                flex: 1;
+                max-width: 150px;
+            }
+        }
+
+        /* Touch-Specific Styles */
+        @media (pointer: coarse) {
+            .btn {
+                min-height: 48px;
+                min-width: 48px;
+                padding: 15px 20px;
+                touch-action: manipulation;
+            }
+            
+            .btn-small {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 12px 15px;
+            }
+            
+            .setting-item select, .setting-item input {
+                min-height: 48px;
+                touch-action: manipulation;
+            }
+            
+            .checkbox-item {
+                min-height: 48px;
+                touch-action: manipulation;
+            }
+            
+            .tab-button {
+                min-height: 48px;
+                touch-action: manipulation;
+            }
+            
+            .word-item {
+                min-height: 48px;
+                touch-action: manipulation;
+            }
+            
+            .navigation-links a {
+                min-height: 48px;
+                touch-action: manipulation;
+            }
+        }
+
+        /* High DPI/Retina Display Support */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .btn {
+                border: 0.5px solid transparent;
+            }
+            
+            .setting-item select, .setting-item input {
+                border-width: 1px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container" id="teacher-settings-container">
+        <!-- Header -->
+        <div class="settings-header">
+            <h1>🎯 Teacher Quiz Settings</h1>
+            <p>Customize the spelling assessment to match your curriculum and student needs</p>
+        </div>
+
+        <!-- Main Settings Layout -->
+        <div class="settings-layout">
+            <!-- Settings Panel -->
+            <div class="settings-panel">
+                <h2>📝 Quiz Configuration</h2>
+
+                <!-- Difficulty Level -->
+                <div class="setting-group">
+                    <h3>🎚️ Difficulty Level</h3>
+                    <div class="setting-item">
+                        <label for="difficulty-level">Choose difficulty level for word selection:</label>
+                        <select id="difficulty-level">
+                            <option value="easy">Easy - Simple words, basic patterns</option>
+                            <option value="medium">Medium - Standard Year 5/6 level</option>
+                            <option value="hard">Hard - Complex spellings, advanced patterns</option>
+                            <option value="mixed" selected>Mixed - Balanced difficulty</option>
+                            <option value="custom">Custom - Manual word selection</option>
+                        </select>
+                        <div class="help-text">Automatic word selection based on complexity analysis</div>
+                    </div>
+                </div>
+
+                <!-- Number of Words -->
+                <div class="setting-group">
+                    <h3>🔢 Quiz Length</h3>
+                    <div class="setting-item">
+                        <label for="number-of-words">Number of words in quiz:</label>
+                        <select id="number-of-words">
+                            <option value="5">5 words - Quick assessment</option>
+                            <option value="10">10 words - Short quiz</option>
+                            <option value="15" selected>15 words - Standard length</option>
+                            <option value="20">20 words - Extended assessment</option>
+                        </select>
+                        <div class="help-text">Adjust quiz length based on available time and student needs</div>
+                    </div>
+                </div>
+
+                <!-- Paragraph Themes -->
+                <div class="setting-group">
+                    <h3>📚 Story Themes</h3>
+                    <label>Select which story themes can be used:</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="theme-school" name="theme" value="school" checked>
+                            <label for="theme-school">🏫 School Adventures</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="theme-sports" name="theme" value="sports" checked>
+                            <label for="theme-sports">⚽ Sports & Games</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="theme-science" name="theme" value="science" checked>
+                            <label for="theme-science">🔬 Science Discovery</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="theme-community" name="theme" value="community" checked>
+                            <label for="theme-community">👨‍🚒 Community Helpers</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="theme-library" name="theme" value="library" checked>
+                            <label for="theme-library">📖 Library Quest</label>
+                        </div>
+                    </div>
+                    <div class="help-text">Choose themes that match your current curriculum topics</div>
+                </div>
+
+                <!-- Time Limit -->
+                <div class="setting-group">
+                    <h3>⏰ Time Management</h3>
+                    <div class="setting-item">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="enable-time-limit">
+                            <label for="enable-time-limit">Enable time limit</label>
+                        </div>
+                        <div class="time-limit-controls">
+                            <input type="number" id="time-limit-minutes" min="5" max="60" value="10" disabled>
+                            <span>minutes</span>
+                        </div>
+                        <div class="help-text">Optional time pressure to encourage focused work</div>
+                    </div>
+                </div>
+
+                <!-- Quiz Options -->
+                <div class="setting-group">
+                    <h3>⚙️ Quiz Behavior</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="enable-second-chances" checked>
+                            <label for="enable-second-chances">✌️ Allow second chances</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="audio-autoplay" checked>
+                            <label for="audio-autoplay">🔊 Auto-play paragraph audio</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="show-word-spaces" checked>
+                            <label for="show-word-spaces">📏 Show word length hints</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="randomize-order" checked>
+                            <label for="randomize-order">🔀 Randomize word order</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Word Bank Selection -->
+                <div class="setting-group">
+                    <h3>📝 Word Bank Selection</h3>
+                    <div class="help-text" style="margin-bottom: 15px;">
+                        Choose specific words or let the system auto-select based on difficulty level
+                    </div>
+                    <div id="word-bank-container" class="word-bank-container">
+                        <!-- Word bank will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="preview-panel">
+                <div class="settings-panel">
+                    <h2>👀 Live Preview</h2>
+                    <div id="settings-preview">
+                        <!-- Preview will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="save-settings" class="btn btn-success">💾 Save Settings</button>
+            <button id="apply-settings" class="btn btn-primary">🚀 Apply & Start Quiz</button>
+            <button id="reset-settings" class="btn btn-warning">🔄 Reset to Defaults</button>
+            <button id="export-settings" class="btn btn-secondary">📤 Export Settings</button>
+            <button id="import-settings" class="btn btn-secondary">📥 Import Settings</button>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="navigation-links">
+            <a href="index.html">🏠 Back to Quiz</a>
+            <a href="teacher-dashboard.html">📊 View Dashboard</a>
+            <a href="help-system.html">❓ Help & Instructions</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="accessibility.js"></script>
+    <script src="wordbank.js"></script>
+    <script src="teacher-settings.js"></script>
+
+    <script>
+        // Handle checkbox visual state updates
+        document.addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox') {
+                const item = e.target.closest('.checkbox-item');
+                if (item) {
+                    if (e.target.checked) {
+                        item.classList.add('checked');
+                        item.style.background = '#d4edda';
+                        item.style.borderColor = '#28a745';
+                    } else {
+                        item.classList.remove('checked');
+                        item.style.background = '#f8f9fa';
+                        item.style.borderColor = 'transparent';
+                    }
+                }
+            }
+        });
+
+        // Initialize checkbox states on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                const item = checkbox.closest('.checkbox-item');
+                if (checkbox.checked) {
+                    item.classList.add('checked');
+                    item.style.background = '#d4edda';
+                    item.style.borderColor = '#28a745';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

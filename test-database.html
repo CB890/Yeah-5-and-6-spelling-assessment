@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Database Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .loading { background: #fff3cd; color: #856404; }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #0056b3; }
+        .code { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Database Connection Test</h1>
+        <p>This page will test if your spelling game can connect to the Supabase database.</p>
+
+        <div id="testResults">
+            <div class="test-result loading">⏳ Starting tests...</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="runTests()">🔄 Run Tests Again</button>
+            <button class="btn" onclick="insertTestData()">➕ Insert Test Quiz</button>
+            <button class="btn" onclick="viewTables()">👀 View Table Data</button>
+        </div>
+
+        <div id="tableData" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Load Supabase and our config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <script>
+        let testResults = [];
+
+        function addTestResult(type, message) {
+            testResults.push({ type, message, timestamp: new Date() });
+            updateTestDisplay();
+        }
+
+        function updateTestDisplay() {
+            const container = document.getElementById('testResults');
+            container.innerHTML = testResults.map(result => 
+                `<div class="test-result ${result.type}">
+                    ${result.message}
+                    <small style="float: right;">${result.timestamp.toLocaleTimeString()}</small>
+                </div>`
+            ).join('');
+        }
+
+        async function runTests() {
+            testResults = [];
+            addTestResult('loading', '🔄 Running database tests...');
+
+            try {
+                // Test 1: Check if Supabase is loaded
+                addTestResult('info', '📦 Testing if Supabase library is loaded...');
+                if (typeof window.supabase === 'undefined') {
+                    throw new Error('Supabase library not loaded');
+                }
+                addTestResult('success', '✅ Supabase library loaded successfully');
+
+                // Test 2: Check if database service exists
+                addTestResult('info', '🔧 Testing if database service is available...');
+                if (!window.databaseService) {
+                    throw new Error('Database service not found');
+                }
+                addTestResult('success', '✅ Database service found');
+
+                // Test 3: Wait for database connection
+                addTestResult('info', '🔌 Testing database connection...');
+                let attempts = 0;
+                while (attempts < 10 && (!window.databaseService.isConnected)) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+
+                if (!window.databaseService.isConnected) {
+                    throw new Error('Database failed to connect after 5 seconds');
+                }
+                addTestResult('success', '✅ Database connected successfully');
+
+                // Test 4: Check school information
+                addTestResult('info', '🏫 Testing school information...');
+                if (!window.databaseService.currentSchool) {
+                    throw new Error('No school information loaded');
+                }
+                addTestResult('success', `✅ School loaded: ${window.databaseService.currentSchool.school_name}`);
+
+                // Test 5: Test database query
+                addTestResult('info', '📊 Testing database query...');
+                const testResult = await window.databaseService.testConnection();
+                if (!testResult) {
+                    throw new Error('Database query test failed');
+                }
+                addTestResult('success', '✅ Database queries working correctly');
+
+                // Test 6: Check tables exist
+                addTestResult('info', '🗃️ Testing if required tables exist...');
+                const schoolsData = await window.databaseService.supabase
+                    .from('schools')
+                    .select('count')
+                    .limit(1);
+
+                const quizData = await window.databaseService.supabase
+                    .from('quiz_sessions')
+                    .select('count')
+                    .limit(1);
+
+                const wordData = await window.databaseService.supabase
+                    .from('word_responses')
+                    .select('count')
+                    .limit(1);
+
+                if (schoolsData.error || quizData.error || wordData.error) {
+                    throw new Error('One or more required tables missing');
+                }
+
+                addTestResult('success', '✅ All required tables exist and accessible');
+
+                // All tests passed!
+                addTestResult('success', '🎉 ALL TESTS PASSED! Your database is ready to use!');
+
+            } catch (error) {
+                addTestResult('error', `❌ Test failed: ${error.message}`);
+                
+                // Provide helpful suggestions
+                if (error.message.includes('Supabase library')) {
+                    addTestResult('info', '💡 Make sure supabase-config.js is loaded correctly');
+                } else if (error.message.includes('Database service')) {
+                    addTestResult('info', '💡 Check if supabase-config.js has any JavaScript errors');
+                } else if (error.message.includes('connect')) {
+                    addTestResult('info', '💡 Check your Supabase credentials in supabase-config.js');
+                } else if (error.message.includes('tables')) {
+                    addTestResult('info', '💡 Run the SQL from database-setup.sql in your Supabase SQL Editor');
+                }
+            }
+        }
+
+        async function insertTestData() {
+            try {
+                addTestResult('info', '➕ Inserting test quiz data...');
+
+                if (!window.databaseService || !window.databaseService.isConnected) {
+                    throw new Error('Database not connected');
+                }
+
+                // Create test quiz session
+                const testSession = {
+                    studentName: 'Test Student',
+                    startTime: new Date().toISOString(),
+                    endTime: new Date().toISOString(),
+                    totalQuestions: 3,
+                    totalCorrect: 2,
+                    firstAttemptCorrect: 1,
+                    secondAttemptCorrect: 1,
+                    totalTimeSeconds: 120,
+                    paragraphTitle: 'Test Paragraph',
+                    difficulty: 'mixed'
+                };
+
+                const savedSession = await window.databaseService.saveQuizSession(testSession);
+
+                // Create test word responses
+                const testWords = [
+                    { word: 'test', userAnswers: ['test'], attempts: 1, correct: true, firstAttemptCorrect: true, timeSpent: 5000 },
+                    { word: 'example', userAnswers: ['exampl', 'example'], attempts: 2, correct: true, firstAttemptCorrect: false, secondAttemptCorrect: true, timeSpent: 8000 },
+                    { word: 'difficult', userAnswers: ['dificult', 'difficult'], attempts: 2, correct: false, firstAttemptCorrect: false, timeSpent: 12000 }
+                ];
+
+                await window.databaseService.saveWordResponses(savedSession.id, testWords);
+
+                addTestResult('success', '✅ Test data inserted successfully!');
+                addTestResult('info', `📝 Created quiz session with ID: ${savedSession.id}`);
+
+            } catch (error) {
+                addTestResult('error', `❌ Failed to insert test data: ${error.message}`);
+            }
+        }
+
+        async function viewTables() {
+            try {
+                addTestResult('info', '👀 Fetching table data...');
+
+                if (!window.databaseService || !window.databaseService.isConnected) {
+                    throw new Error('Database not connected');
+                }
+
+                // Get recent data from each table
+                const schools = await window.databaseService.supabase
+                    .from('schools')
+                    .select('*')
+                    .limit(5);
+
+                const quizzes = await window.databaseService.supabase
+                    .from('quiz_sessions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                const words = await window.databaseService.supabase
+                    .from('word_responses')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                let html = '<h3>📊 Recent Database Records</h3>';
+
+                html += `<h4>🏫 Schools (${schools.data?.length || 0} shown):</h4>`;
+                html += '<div class="code">' + JSON.stringify(schools.data, null, 2) + '</div>';
+
+                html += `<h4>📝 Quiz Sessions (${quizzes.data?.length || 0} shown):</h4>`;
+                html += '<div class="code">' + JSON.stringify(quizzes.data, null, 2) + '</div>';
+
+                html += `<h4>🔤 Word Responses (${words.data?.length || 0} shown):</h4>`;
+                html += '<div class="code">' + JSON.stringify(words.data, null, 2) + '</div>';
+
+                document.getElementById('tableData').innerHTML = html;
+
+                addTestResult('success', '✅ Table data retrieved successfully!');
+
+            } catch (error) {
+                addTestResult('error', `❌ Failed to view table data: ${error.message}`);
+            }
+        }
+
+        // Run tests automatically when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait a moment for the database service to initialize
+            setTimeout(runTests, 2000);
+        });
+    </script>
+</body>
+</html> 

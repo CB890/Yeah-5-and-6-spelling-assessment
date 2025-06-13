@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Use the Spelling Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .help-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .help-content {
+            padding: 40px;
+        }
+        
+        .help-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #4a90e2;
+        }
+        
+        .help-section h2 {
+            color: #4a90e2;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .help-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .step-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .step-list li {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #26de81;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #4a90e2;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .example-box {
+            background: #e8f5e8;
+            border: 2px solid #26de81;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .example-word {
+            display: inline-block;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        
+        .audio-example {
+            background: #e1f5fe;
+            border: 2px solid #4a90e2;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .help-tip {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .help-tip::before {
+            content: "💡 ";
+            font-size: 1.2rem;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .demo-section {
+            background: #f0f8ff;
+            border: 2px solid #4a90e2;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .demo-input {
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            margin: 10px auto;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        
+        .spaces-demo {
+            font-family: monospace;
+            font-size: 1.3rem;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="title-section">
+                    <h1>📚 How to Use the Spelling Assessment</h1>
+                    <p class="subtitle">Step-by-step guide for students</p>
+                </div>
+                <div class="header-actions">
+                    <a href="index.html" class="teacher-link">
+                        🏠 Back to Quiz
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="help-container">
+            <div class="help-content">
+                
+                <!-- Getting Started Section -->
+                <div class="help-section">
+                    <h2>🚀 Getting Started</h2>
+                    <ol class="step-list">
+                        <li><span class="step-number">1</span><strong>Enter your name (optional):</strong> Type your name in the box so your teacher can see your results.</li>
+                        <li><span class="step-number">2</span><strong>Click "Start Quiz":</strong> This will begin your spelling assessment.</li>
+                        <li><span class="step-number">3</span><strong>Listen carefully:</strong> The computer will read a story to you automatically.</li>
+                        <li><span class="step-number">4</span><strong>Fill in the missing words:</strong> Type the words you hear in the correct spaces.</li>
+                        <li><span class="step-number">5</span><strong>Get your results:</strong> See how well you did and which words to practice!</li>
+                    </ol>
+                </div>
+
+                <!-- How the Quiz Works -->
+                <div class="help-section">
+                    <h2>📖 How the Quiz Works</h2>
+                    
+                    <h3>Reading the Story</h3>
+                    <p>You'll see a story with some words missing. The computer will read the whole story to you first, including the missing words.</p>
+                    
+                    <div class="audio-example">
+                        <h4>🔊 Audio Controls</h4>
+                        <p><strong>🔊 Listen to Paragraph:</strong> Plays the whole story</p>
+                        <p><strong>🔊 Listen:</strong> Plays just one word</p>
+                        <p>You can click these buttons as many times as you need!</p>
+                    </div>
+
+                    <h3>Filling in the Words</h3>
+                    <p>You'll see numbered boxes where the missing words should go. Each box shows you how many letters the word has.</p>
+                    
+                    <div class="example-box">
+                        <h4>Example:</h4>
+                        <p>If the word is "beautiful", you'll see:</p>
+                        <div class="spaces-demo">Word 5: _ _ _ _ _ _ _ _ _ (9 letters)</div>
+                        <input type="text" class="demo-input" placeholder="Type: beautiful" readonly>
+                    </div>
+                </div>
+
+                <!-- Second Chances -->
+                <div class="help-section">
+                    <h2>🎯 Second Chances</h2>
+                    <p>Don't worry if you get a word wrong the first time! Here's what happens:</p>
+                    
+                    <ol class="step-list">
+                        <li><span class="step-number">1</span><strong>First try:</strong> Type what you think the word is and click "Submit Answer".</li>
+                        <li><span class="step-number">2</span><strong>If it's wrong:</strong> The box will turn orange and the computer will read the sentence with that word.</li>
+                        <li><span class="step-number">3</span><strong>Second try:</strong> Listen carefully and try again!</li>
+                        <li><span class="step-number">4</span><strong>Don't worry:</strong> Even if you need two tries, you're still learning!</li>
+                    </ol>
+                    
+                    <div class="help-tip">
+                        <strong>Tip:</strong> Listen carefully to how the word sounds in the sentence. This will help you spell it correctly!
+                    </div>
+                </div>
+
+                <!-- Spelling Tips -->
+                <div class="help-section">
+                    <h2>✨ Spelling Tips</h2>
+                    
+                    <h3>Listen Carefully</h3>
+                    <ul>
+                        <li>Play the audio as many times as you need</li>
+                        <li>Pay attention to each sound in the word</li>
+                        <li>Think about words you already know that sound similar</li>
+                    </ul>
+
+                    <h3>Use the Letter Spaces</h3>
+                    <ul>
+                        <li>Count the dashes to see how many letters the word has</li>
+                        <li>This helps you know if your spelling is the right length</li>
+                        <li>If your word is too short or too long, try again</li>
+                    </ul>
+
+                    <h3>Common Patterns</h3>
+                    <div class="example-box">
+                        <p><strong>Silent letters:</strong> Some letters you can't hear</p>
+                        <div class="example-word">knife</div>
+                        <div class="example-word">lamb</div>
+                        <div class="example-word">island</div>
+                        
+                        <p><strong>Double letters:</strong> Some sounds need two letters</p>
+                        <div class="example-word">happy</div>
+                        <div class="example-word">little</div>
+                        <div class="example-word">address</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Demo -->
+                <div class="help-section">
+                    <h2>🎮 Try It Now!</h2>
+                    <div class="demo-section">
+                        <h3>Practice Spelling Demo</h3>
+                        <p>Here's a practice word. Can you spell it?</p>
+                        
+                        <div class="audio-example">
+                            <button onclick="playDemoWord()" class="btn btn-audio">🔊 Listen to the word</button>
+                        </div>
+                        
+                        <p><strong>Word 1:</strong></p>
+                        <div class="spaces-demo">_ _ _ _ _ _ _ (7 letters)</div>
+                        <input type="text" id="demo-input" class="demo-input" placeholder="Type your answer" maxlength="7">
+                        <br>
+                        <button onclick="checkDemo()" class="btn btn-primary">Check Answer</button>
+                        <div id="demo-feedback" style="margin-top: 15px; font-weight: bold;"></div>
+                        
+                        <div class="help-tip">
+                            <strong>Answer:</strong> The word is "example" - this shows you how the quiz works!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Your Results -->
+                <div class="help-section">
+                    <h2>🏆 Understanding Your Results</h2>
+                    
+                    <h3>Your Score</h3>
+                    <p>At the end, you'll see:</p>
+                    <ul>
+                        <li><strong>Total Score:</strong> How many words you got right (out of 15)</li>
+                        <li><strong>First Try:</strong> Words you spelled correctly the first time</li>
+                        <li><strong>Second Try:</strong> Words you needed two attempts for</li>
+                        <li><strong>Time Taken:</strong> How long the quiz took you</li>
+                    </ul>
+
+                    <h3>Word-by-Word Results</h3>
+                    <p>You'll see each word with:</p>
+                    <ul>
+                        <li>✅ <strong>Green:</strong> You got it right!</li>
+                        <li>🟡 <strong>Orange:</strong> You got it right on the second try</li>
+                        <li>❌ <strong>Red:</strong> You can practice this word more</li>
+                    </ul>
+
+                    <div class="help-tip">
+                        <strong>Remember:</strong> Every quiz helps you learn! Don't worry about perfect scores - focus on learning new words.
+                    </div>
+                </div>
+
+                <!-- Technical Help -->
+                <div class="help-section">
+                    <h2>🔧 If Something Goes Wrong</h2>
+                    
+                    <h3>Audio Not Working?</h3>
+                    <ul>
+                        <li>Check your speakers or headphones are plugged in</li>
+                        <li>Make sure your device volume is turned up</li>
+                        <li>Try refreshing the page (reload the website)</li>
+                        <li>Ask your teacher for help if needed</li>
+                    </ul>
+
+                    <h3>Can't Type in the Boxes?</h3>
+                    <ul>
+                        <li>Click directly in the text box</li>
+                        <li>Make sure you've submitted the previous answer first</li>
+                        <li>Try refreshing the page if it's not working</li>
+                    </ul>
+
+                    <h3>Page Looks Wrong?</h3>
+                    <ul>
+                        <li>Try making your browser window bigger</li>
+                        <li>Refresh the page (reload the website)</li>
+                        <li>Ask your teacher to check your internet connection</li>
+                    </ul>
+                </div>
+
+                <!-- Navigation -->
+                <div class="navigation-buttons">
+                    <a href="index.html" class="btn btn-primary">🏠 Back to Quiz</a>
+                    <button onclick="playAudioInstructions()" class="btn btn-audio">🔊 Listen to Instructions</button>
+                    <a href="teacher-dashboard.html" class="btn btn-secondary">👩‍🏫 Teacher Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="accessibility.js"></script>
+    <script>
+        // Demo word functionality
+        function playDemoWord() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance('example');
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                
+                // Try to use a female voice
+                const voices = speechSynthesis.getVoices();
+                const femaleVoice = voices.find(voice => 
+                    voice.name.toLowerCase().includes('female') ||
+                    voice.name.toLowerCase().includes('samantha') ||
+                    voice.name.toLowerCase().includes('susan') ||
+                    voice.name.toLowerCase().includes('karen')
+                );
+                
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('Audio not supported on this device. The word is "example".');
+            }
+        }
+        
+        function checkDemo() {
+            const input = document.getElementById('demo-input');
+            const feedback = document.getElementById('demo-feedback');
+            const answer = input.value.toLowerCase().trim();
+            
+            if (answer === 'example') {
+                feedback.innerHTML = '🎉 Correct! Well done!';
+                feedback.style.color = '#26de81';
+                input.style.borderColor = '#26de81';
+            } else if (answer === '') {
+                feedback.innerHTML = '📝 Please type your answer first.';
+                feedback.style.color = '#ffa500';
+            } else {
+                feedback.innerHTML = '🔄 Try again! Listen to the word once more.';
+                feedback.style.color = '#ff6b6b';
+                input.style.borderColor = '#ff6b6b';
+            }
+        }
+        
+        // Audio instructions
+        function playAudioInstructions() {
+            if ('speechSynthesis' in window) {
+                const text = `Welcome to the spelling assessment help guide. 
+                
+                Here's how to use the quiz: First, enter your name if you want to. Then click start quiz. 
+                
+                You'll hear a story with missing words. Listen carefully to the whole story first. 
+                
+                Then fill in the missing words by typing them in the numbered boxes. Each box shows you how many letters the word should have.
+                
+                If you get a word wrong, don't worry! You'll get a second chance, and the computer will read the sentence with that word to help you.
+                
+                You can click the listen buttons as many times as you need. Take your time and do your best!
+                
+                Good luck with your spelling quiz!`;
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85;
+                utterance.pitch = 1;
+                
+                // Try to use a female voice
+                const voices = speechSynthesis.getVoices();
+                const femaleVoice = voices.find(voice => 
+                    voice.name.toLowerCase().includes('female') ||
+                    voice.name.toLowerCase().includes('samantha') ||
+                    voice.name.toLowerCase().includes('susan') ||
+                    voice.name.toLowerCase().includes('karen')
+                );
+                
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('Audio instructions not available on this device.');
+            }
+        }
+        
+        // Load voices when available
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = function() {
+                // Voices loaded
+            };
+        }
+        
+        // Demo input enter key support
+        document.getElementById('demo-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkDemo();
+            }
+        });
+    </script>
+</body>
+</html> 
