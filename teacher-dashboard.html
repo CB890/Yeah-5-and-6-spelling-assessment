@@ -767,7 +767,7 @@
                     
                     // Update the dashboard
                     this.updateStats();
-                    this.updateRecentQuizzes();
+                    await this.updateRecentQuizzes();
                     this.updateWordStats();
                     
                     // Show the dashboard
@@ -811,7 +811,7 @@
                 document.getElementById('averageTime').textContent = avgTime;
             }
 
-            updateRecentQuizzes() {
+            async updateRecentQuizzes() {
                 const container = document.getElementById('recentQuizzes');
                 
                 if (!this.quizData.length) {
@@ -839,7 +839,8 @@
                 // Show most recent 20 quizzes
                 const recentQuizzes = this.quizData.slice(0, 20);
                 
-                recentQuizzes.forEach(quiz => {
+                // Process quizzes with async school name lookup
+                for (const quiz of recentQuizzes) {
                     // Better score calculation with debugging
                     let score = 0;
                     if (quiz.total_correct !== null && quiz.total_questions !== null && quiz.total_questions > 0) {
@@ -849,12 +850,20 @@
                     const scoreClass = this.getScoreClass(score);
                     const date = new Date(quiz.created_at).toLocaleDateString();
                     
+                    // Get school name if admin
+                    let schoolName = '';
+                    if (this.isAdmin && quiz.school_id) {
+                        schoolName = await this.getSchoolName(quiz.school_id);
+                    }
+                    
                     // Debug log for each quiz
                     console.log('Quiz data:', {
                         student: quiz.student_name,
                         correct: quiz.total_correct,
                         total: quiz.total_questions,
-                        calculatedScore: score
+                        calculatedScore: score,
+                        schoolId: quiz.school_id,
+                        schoolName: schoolName
                     });
                     
                     html += `
@@ -865,10 +874,10 @@
                             <td>${quiz.total_correct || 0}/${quiz.total_questions || 0}</td>
                             <td>N/A</td>
                             <td>${quiz.paragraph_title || 'Unknown'}</td>
-                            ${this.isAdmin ? `<td>${this.getSchoolName(quiz.school_id)}</td>` : ''}
+                            ${this.isAdmin ? `<td>${schoolName}</td>` : ''}
                         </tr>
                     `;
-                });
+                }
 
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -940,13 +949,47 @@
                 return 'needs-work';
             }
 
-            getSchoolName(schoolId) {
-                // Simple mapping for now - could be enhanced to load from database
-                const schoolMap = {
-                    '1': 'Kent College',
-                    '2': 'Victory Heights Primary'
-                };
-                return schoolMap[schoolId] || `School ${schoolId}`;
+            async getSchoolName(schoolId) {
+                // Check if we already have this school name cached
+                if (this.schoolNameCache && this.schoolNameCache[schoolId]) {
+                    return this.schoolNameCache[schoolId];
+                }
+                
+                // Initialize cache if it doesn't exist
+                if (!this.schoolNameCache) {
+                    this.schoolNameCache = {};
+                }
+                
+                try {
+                    // Look up the school name from the database
+                    const { data: schoolData, error } = await window.databaseService.supabase
+                        .from('schools')
+                        .select('school_name')
+                        .eq('id', schoolId)
+                        .single();
+
+                    if (error || !schoolData) {
+                        console.warn('Could not find school name for ID:', schoolId);
+                        // Fallback mapping for known schools
+                        const fallbackMap = {
+                            '1': 'Kent College',
+                            '2': 'Victory Heights Primary School'
+                        };
+                        const fallbackName = fallbackMap[schoolId] || `School ${schoolId}`;
+                        this.schoolNameCache[schoolId] = fallbackName;
+                        return fallbackName;
+                    }
+
+                    // Cache and return the school name
+                    this.schoolNameCache[schoolId] = schoolData.school_name;
+                    return schoolData.school_name;
+                    
+                } catch (error) {
+                    console.error('Error looking up school name:', error);
+                    const fallbackName = `School ${schoolId}`;
+                    this.schoolNameCache[schoolId] = fallbackName;
+                    return fallbackName;
+                }
             }
 
             hideLoading() {
