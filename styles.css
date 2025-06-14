@@ -293,8 +293,10 @@ header h1 {
 
 .progress-text {
     text-align: center;
-    font-weight: 600;
-    color: #666;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
 /* Paragraph Container */
@@ -303,9 +305,11 @@ header h1 {
 }
 
 .paragraph-container h3 {
-    color: #4a90e2;
+    color: #ffffff;
     margin-bottom: 20px;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
 .audio-controls {
@@ -314,20 +318,24 @@ header h1 {
 }
 
 .paragraph-text {
-    background: #f8f9fa;
-    padding: 25px;
-    border-radius: 10px;
-    border-left: 4px solid #4a90e2;
-    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    border: 3px solid #ffffff;
+    font-size: 1.3rem;
     line-height: 1.8;
-    color: #333;
+    color: #222;
+    font-weight: 500;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
 }
 
 /* Answer Inputs */
 .answers-container h4 {
-    color: #4a90e2;
+    color: #ffffff;
     margin-bottom: 20px;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
 .answer-grid {
@@ -345,24 +353,31 @@ header h1 {
 
 .answer-item label {
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #555;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
 }
 
 .answer-input {
-    padding: 12px 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 1.1rem;
+    padding: 15px 20px;
+    border: 3px solid #ffffff;
+    border-radius: 10px;
+    font-size: 1.3rem;
     text-align: center;
-    min-width: 120px;
+    min-width: 140px;
     transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.95);
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .answer-input:focus {
     outline: none;
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    border-color: #26de81;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 0 4px rgba(38, 222, 129, 0.3), 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
 }
 
 .answer-input.correct {
@@ -377,9 +392,11 @@ header h1 {
 
 .word-spaces {
     font-family: monospace;
-    color: #999;
-    font-size: 0.9rem;
+    color: #ffffff;
+    font-size: 1rem;
     margin-top: 5px;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
 }
 
 /* Quiz Controls */
@@ -725,15 +742,25 @@ header h1 {
 
     .answer-input {
         font-size: 16px; /* Prevent zoom on iOS */
-        padding: 15px 20px;
-        border-radius: 10px;
+        padding: 18px 20px;
+        border-radius: 12px;
         width: 100%;
+        border: 3px solid #ffffff;
+        background: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .paragraph-text {
-        font-size: 1.1rem;
-        line-height: 1.6;
-        padding: 20px;
+        font-size: 1.2rem;
+        line-height: 1.7;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 3px solid #ffffff;
+        border-radius: 15px;
+        color: #222;
+        font-weight: 500;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
     }
 
     .audio-controls {
@@ -840,9 +867,15 @@ header h1 {
     }
 
     .paragraph-text {
-        font-size: 1rem;
-        line-height: 1.5;
-        padding: 15px;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 3px solid #ffffff;
+        border-radius: 12px;
+        color: #222;
+        font-weight: 500;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
     }
 
     .answer-item {
@@ -850,8 +883,13 @@ header h1 {
     }
 
     .answer-input {
-        padding: 12px 15px;
+        padding: 16px 18px;
         font-size: 16px;
+        border: 3px solid #ffffff;
+        background: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 12px;
     }
 
     .btn {
