@@ -27,10 +27,19 @@ class SpellingQuiz {
         // Check if speech synthesis is supported
         if ('speechSynthesis' in window) {
             this.isAudioEnabled = true;
+            this.isMobile = this.detectMobile();
+            this.speechInitialized = false;
+            
+            console.log('📱 Mobile device detected:', this.isMobile);
             
             // Wait for voices to load
             const setVoice = () => {
                 const voices = this.speechSynthesis.getVoices();
+                
+                if (voices.length === 0) {
+                    console.log('⏳ No voices available yet, waiting...');
+                    return;
+                }
                 
                 // Helper function to check if voice is female
                 const isFemaleVoice = (voice) => {
@@ -74,18 +83,73 @@ class SpellingQuiz {
                 } else {
                     console.log('❌ Warning: No female voices available, using default');
                 }
+                
+                this.speechInitialized = true;
             };
 
-            // Set voice immediately if available, otherwise wait for voices to load
-            if (this.speechSynthesis.getVoices().length > 0) {
-                setVoice();
-            } else {
+            // Mobile-specific initialization
+            if (this.isMobile) {
+                // On mobile, voices might not be available immediately
+                // Try multiple times with delays
+                let attempts = 0;
+                const trySetVoice = () => {
+                    attempts++;
+                    const voices = this.speechSynthesis.getVoices();
+                    
+                    if (voices.length > 0) {
+                        setVoice();
+                    } else if (attempts < 10) {
+                        setTimeout(trySetVoice, 500);
+                    } else {
+                        console.warn('📱 Mobile: Could not load voices after multiple attempts');
+                        this.isAudioEnabled = false;
+                    }
+                };
+                
+                // Start trying immediately and also listen for voice changes
+                trySetVoice();
                 this.speechSynthesis.addEventListener('voiceschanged', setVoice);
+                
+                // Mobile requires user interaction before speech works
+                this.initializeMobileSpeech();
+            } else {
+                // Desktop initialization
+                if (this.speechSynthesis.getVoices().length > 0) {
+                    setVoice();
+                } else {
+                    this.speechSynthesis.addEventListener('voiceschanged', setVoice);
+                }
             }
         } else {
             console.warn('Speech synthesis not supported in this browser');
             this.isAudioEnabled = false;
         }
+    }
+
+    detectMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    }
+
+    initializeMobileSpeech() {
+        // Mobile browsers require user interaction before speech synthesis works
+        this.mobileAudioReady = false;
+        
+        const enableMobileAudio = () => {
+            if (!this.mobileAudioReady) {
+                // Test speech synthesis with a silent utterance
+                const testUtterance = new SpeechSynthesisUtterance('');
+                testUtterance.volume = 0;
+                this.speechSynthesis.speak(testUtterance);
+                this.mobileAudioReady = true;
+                console.log('📱 Mobile audio initialized');
+            }
+        };
+        
+        // Add listeners to common interaction events
+        ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
+            document.addEventListener(event, enableMobileAudio, { once: true, passive: true });
+        });
     }
 
     speak(text, options = {}) {
@@ -95,22 +159,76 @@ class SpellingQuiz {
             // Stop any current speech
             this.speechSynthesis.cancel();
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            // Configure utterance
-            utterance.voice = this.currentVoice;
-            utterance.rate = options.rate || 0.9; // Slightly slower for children
-            utterance.pitch = options.pitch || 1.0;
-            utterance.volume = options.volume || 1.0;
-            
-            utterance.onend = () => resolve();
-            utterance.onerror = (error) => {
-                console.error('Speech synthesis error:', error);
-                resolve();
-            };
-            
-            this.speechSynthesis.speak(utterance);
+            // Mobile compatibility: Small delay to ensure synthesis is ready
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Configure utterance with mobile-optimized settings
+                utterance.voice = this.currentVoice;
+                utterance.rate = options.rate || 0.8; // Slower for mobile clarity
+                utterance.pitch = options.pitch || 1.0;
+                utterance.volume = options.volume || 1.0;
+                
+                // Mobile-specific: Break long text into chunks
+                if (text.length > 200) {
+                    utterance.text = this.chunkTextForMobile(text);
+                }
+                
+                let resolved = false;
+                
+                utterance.onend = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                };
+                
+                utterance.onerror = (error) => {
+                    console.error('Speech synthesis error:', error);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                };
+                
+                // Mobile fallback: Resolve after timeout if speech doesn't complete
+                setTimeout(() => {
+                    if (!resolved) {
+                        console.warn('Speech timeout - resolving anyway');
+                        resolved = true;
+                        resolve();
+                    }
+                }, Math.max(text.length * 100, 5000)); // Dynamic timeout based on text length
+                
+                // Mobile compatibility: Ensure voice is set before speaking
+                if (this.currentVoice && this.speechSynthesis.getVoices().length > 0) {
+                    utterance.voice = this.currentVoice;
+                }
+                
+                this.speechSynthesis.speak(utterance);
+                
+            }, 100); // Small delay for mobile compatibility
         });
+    }
+
+    chunkTextForMobile(text) {
+        // Break long text into smaller chunks for better mobile compatibility
+        const maxChunkLength = 200;
+        if (text.length <= maxChunkLength) return text;
+        
+        // Try to break at sentence boundaries
+        const sentences = text.split(/[.!?]+/);
+        let result = '';
+        
+        for (const sentence of sentences) {
+            if ((result + sentence).length <= maxChunkLength) {
+                result += sentence + '. ';
+            } else {
+                break;
+            }
+        }
+        
+        return result.trim() || text.substring(0, maxChunkLength);
     }
 
     stopSpeaking() {
@@ -564,6 +682,18 @@ class SpellingQuiz {
         const playBtn = document.getElementById('play-paragraph');
         if (!this.isAudioEnabled || !this.completeParagraphText) return;
         
+        // Mobile-specific: Ensure audio is ready
+        if (this.isMobile && !this.mobileAudioReady) {
+            console.log('📱 Initializing mobile audio...');
+            const testUtterance = new SpeechSynthesisUtterance('');
+            testUtterance.volume = 0;
+            this.speechSynthesis.speak(testUtterance);
+            this.mobileAudioReady = true;
+            
+            // Small delay to ensure initialization
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
         // Update button state
         if (playBtn) {
             playBtn.disabled = true;
@@ -571,9 +701,25 @@ class SpellingQuiz {
         }
 
         try {
-            await this.speak(this.completeParagraphText, { rate: 0.85 });
+            // Mobile-specific: Use slower rate and ensure voice is available
+            const speechOptions = {
+                rate: this.isMobile ? 0.7 : 0.85,
+                volume: 1.0
+            };
+            
+            await this.speak(this.completeParagraphText, speechOptions);
         } catch (error) {
             console.error('Error playing paragraph:', error);
+            
+            // Mobile fallback: Try again with basic settings
+            if (this.isMobile) {
+                console.log('📱 Retrying with mobile fallback...');
+                try {
+                    await this.speak(this.completeParagraphText, { rate: 0.6 });
+                } catch (fallbackError) {
+                    console.error('Mobile fallback also failed:', fallbackError);
+                }
+            }
         } finally {
             // Restore button state
             if (playBtn) {
@@ -586,6 +732,15 @@ class SpellingQuiz {
     async playWord(word, index) {
         if (!this.isAudioEnabled) return;
         
+        // Mobile-specific: Ensure audio is ready
+        if (this.isMobile && !this.mobileAudioReady) {
+            const testUtterance = new SpeechSynthesisUtterance('');
+            testUtterance.volume = 0;
+            this.speechSynthesis.speak(testUtterance);
+            this.mobileAudioReady = true;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
         // Find the button for this word
         const buttons = document.querySelectorAll('.word-audio-controls .btn');
         const button = buttons[index];
@@ -596,9 +751,25 @@ class SpellingQuiz {
         }
 
         try {
-            await this.speak(word, { rate: 0.8, pitch: 1.1 });
+            // Mobile-optimized speech settings
+            const speechOptions = {
+                rate: this.isMobile ? 0.7 : 0.8,
+                pitch: 1.1,
+                volume: 1.0
+            };
+            
+            await this.speak(word, speechOptions);
         } catch (error) {
             console.error('Error playing word:', error);
+            
+            // Mobile fallback
+            if (this.isMobile) {
+                try {
+                    await this.speak(word, { rate: 0.6 });
+                } catch (fallbackError) {
+                    console.error('Mobile word playback fallback failed:', fallbackError);
+                }
+            }
         } finally {
             if (button) {
                 button.disabled = false;

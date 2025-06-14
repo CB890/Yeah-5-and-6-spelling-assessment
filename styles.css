@@ -1055,31 +1055,84 @@ header h1 {
         min-height: 48px;
         min-width: 48px;
         padding: 15px 25px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
     }
     
     .btn-small {
         min-height: 44px;
         min-width: 44px;
         padding: 12px 20px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    
+    .btn-audio {
+        min-height: 52px;
+        min-width: 52px;
+        padding: 16px 28px;
+        font-size: 1.1rem;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    .context-audio-btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
     }
     
     .answer-input {
         min-height: 48px;
         padding: 15px 20px;
+        touch-action: manipulation;
     }
     
     .teacher-link, .help-link {
         min-height: 48px;
         padding: 15px 25px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
     }
     
     /* Increase spacing for touch targets */
     .audio-controls {
-        gap: 15px;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
     }
     
     .header-actions {
         gap: 15px;
+    }
+    
+    /* Mobile-specific audio enhancements */
+    .word-audio-controls {
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .word-audio-controls .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 16px;
+        font-size: 0.9rem;
     }
 }
 
