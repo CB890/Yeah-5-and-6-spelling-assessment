@@ -153,7 +153,17 @@ class SpellingQuiz {
     }
 
     speak(text, options = {}) {
-        if (!this.isAudioEnabled || !text) return Promise.resolve();
+        if (!this.isAudioEnabled || !text) {
+            console.log('❌ Speech not available:', { audioEnabled: this.isAudioEnabled, hasText: !!text });
+            return Promise.resolve();
+        }
+
+        console.log('🔊 Starting speech:', { 
+            textLength: text.length, 
+            isMobile: this.isMobile, 
+            voice: this.currentVoice?.name,
+            options 
+        });
 
         return new Promise((resolve) => {
             // Stop any current speech
@@ -161,22 +171,38 @@ class SpellingQuiz {
             
             // Mobile compatibility: Small delay to ensure synthesis is ready
             setTimeout(() => {
-                const utterance = new SpeechSynthesisUtterance(text);
+                let textToSpeak = text;
+                
+                // Mobile-specific: Handle long text differently
+                if (this.isMobile && text.length > 200) {
+                    console.log('📱 Mobile: Chunking long text');
+                    textToSpeak = this.chunkTextForMobile(text);
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
                 
                 // Configure utterance with mobile-optimized settings
                 utterance.voice = this.currentVoice;
-                utterance.rate = options.rate || 0.8; // Slower for mobile clarity
+                utterance.rate = options.rate || (this.isMobile ? 0.6 : 0.8);
                 utterance.pitch = options.pitch || 1.0;
                 utterance.volume = options.volume || 1.0;
                 
-                // Mobile-specific: Break long text into chunks
-                if (text.length > 200) {
-                    utterance.text = this.chunkTextForMobile(text);
-                }
+                console.log('🔊 Speech settings:', {
+                    voice: utterance.voice?.name,
+                    rate: utterance.rate,
+                    pitch: utterance.pitch,
+                    volume: utterance.volume,
+                    textLength: textToSpeak.length
+                });
                 
                 let resolved = false;
                 
+                utterance.onstart = () => {
+                    console.log('🔊 Speech started');
+                };
+                
                 utterance.onend = () => {
+                    console.log('✅ Speech ended normally');
                     if (!resolved) {
                         resolved = true;
                         resolve();
@@ -184,7 +210,7 @@ class SpellingQuiz {
                 };
                 
                 utterance.onerror = (error) => {
-                    console.error('Speech synthesis error:', error);
+                    console.error('❌ Speech synthesis error:', error);
                     if (!resolved) {
                         resolved = true;
                         resolve();
@@ -192,43 +218,92 @@ class SpellingQuiz {
                 };
                 
                 // Mobile fallback: Resolve after timeout if speech doesn't complete
+                const timeoutDuration = this.isMobile ? 
+                    Math.min(textToSpeak.length * 150, 10000) : // Mobile: max 10 seconds
+                    Math.max(textToSpeak.length * 100, 5000);   // Desktop: based on length
+                
                 setTimeout(() => {
                     if (!resolved) {
-                        console.warn('Speech timeout - resolving anyway');
+                        console.warn('⏰ Speech timeout after', timeoutDuration, 'ms - resolving anyway');
                         resolved = true;
                         resolve();
                     }
-                }, Math.max(text.length * 100, 5000)); // Dynamic timeout based on text length
+                }, timeoutDuration);
                 
                 // Mobile compatibility: Ensure voice is set before speaking
                 if (this.currentVoice && this.speechSynthesis.getVoices().length > 0) {
                     utterance.voice = this.currentVoice;
+                    console.log('🔊 Voice confirmed:', this.currentVoice.name);
+                } else {
+                    console.warn('⚠️ No voice available');
                 }
                 
-                this.speechSynthesis.speak(utterance);
+                try {
+                    this.speechSynthesis.speak(utterance);
+                    console.log('🔊 Speech synthesis started');
+                } catch (error) {
+                    console.error('❌ Failed to start speech synthesis:', error);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                }
                 
-            }, 100); // Small delay for mobile compatibility
+            }, this.isMobile ? 200 : 100); // Longer delay for mobile
         });
     }
 
     chunkTextForMobile(text) {
-        // Break long text into smaller chunks for better mobile compatibility
-        const maxChunkLength = 200;
-        if (text.length <= maxChunkLength) return text;
+        console.log('📱 Chunking text for mobile:', text.length, 'characters');
         
-        // Try to break at sentence boundaries
-        const sentences = text.split(/[.!?]+/);
+        // For mobile, use shorter chunks
+        const maxChunkLength = 150;
+        if (text.length <= maxChunkLength) {
+            console.log('📱 Text is short enough, no chunking needed');
+            return text;
+        }
+        
+        // Try to break at sentence boundaries first
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        console.log('📱 Found', sentences.length, 'sentences');
+        
+        if (sentences.length === 0) {
+            console.log('📱 No sentences found, using substring');
+            return text.substring(0, maxChunkLength);
+        }
+        
+        // Take the first complete sentence that fits
         let result = '';
-        
-        for (const sentence of sentences) {
-            if ((result + sentence).length <= maxChunkLength) {
-                result += sentence + '. ';
+        for (let i = 0; i < sentences.length; i++) {
+            const sentence = sentences[i].trim();
+            const potential = result + sentence + '. ';
+            
+            if (potential.length <= maxChunkLength) {
+                result = potential;
+                console.log('📱 Added sentence', i + 1, '- total length:', result.length);
             } else {
+                console.log('📱 Sentence', i + 1, 'would exceed limit, stopping');
+                break;
+            }
+            
+            // For mobile, limit to first 2 sentences max
+            if (i >= 1) {
+                console.log('📱 Limiting to 2 sentences for mobile');
                 break;
             }
         }
         
-        return result.trim() || text.substring(0, maxChunkLength);
+        // If no sentences fit, take the first sentence even if it's long
+        if (result.trim() === '') {
+            result = sentences[0].trim() + '.';
+            if (result.length > maxChunkLength) {
+                result = result.substring(0, maxChunkLength - 3) + '...';
+            }
+            console.log('📱 Using truncated first sentence:', result.length, 'characters');
+        }
+        
+        console.log('📱 Final chunked text:', result.length, 'characters -', result.substring(0, 50) + '...');
+        return result.trim();
     }
 
     stopSpeaking() {
@@ -680,7 +755,14 @@ class SpellingQuiz {
 
     async playParagraph() {
         const playBtn = document.getElementById('play-paragraph');
-        if (!this.isAudioEnabled || !this.completeParagraphText) return;
+        if (!this.isAudioEnabled || !this.completeParagraphText) {
+            console.log('❌ Audio not enabled or no paragraph text');
+            return;
+        }
+        
+        console.log('📱 Mobile device:', this.isMobile);
+        console.log('📝 Paragraph text length:', this.completeParagraphText.length);
+        console.log('📝 Paragraph text:', this.completeParagraphText.substring(0, 100) + '...');
         
         // Mobile-specific: Ensure audio is ready
         if (this.isMobile && !this.mobileAudioReady) {
@@ -701,23 +783,53 @@ class SpellingQuiz {
         }
 
         try {
+            let textToSpeak = this.completeParagraphText;
+            
+            // Mobile-specific: Break long paragraphs into smaller chunks
+            if (this.isMobile && textToSpeak.length > 150) {
+                console.log('📱 Breaking paragraph into mobile-friendly chunks');
+                textToSpeak = this.createMobileParagraphChunks(textToSpeak);
+            }
+            
+            console.log('🔊 Speaking text:', textToSpeak.substring(0, 100) + '...');
+            
             // Mobile-specific: Use slower rate and ensure voice is available
             const speechOptions = {
-                rate: this.isMobile ? 0.7 : 0.85,
-                volume: 1.0
+                rate: this.isMobile ? 0.6 : 0.85,
+                volume: 1.0,
+                pitch: 1.0
             };
             
-            await this.speak(this.completeParagraphText, speechOptions);
-        } catch (error) {
-            console.error('Error playing paragraph:', error);
+            await this.speak(textToSpeak, speechOptions);
+            console.log('✅ Paragraph speech completed successfully');
             
-            // Mobile fallback: Try again with basic settings
+        } catch (error) {
+            console.error('❌ Error playing paragraph:', error);
+            
+            // Mobile fallback: Try with even simpler settings
             if (this.isMobile) {
-                console.log('📱 Retrying with mobile fallback...');
+                console.log('📱 Trying mobile fallback with shorter text...');
                 try {
-                    await this.speak(this.completeParagraphText, { rate: 0.6 });
+                    // Try with just the first sentence
+                    const firstSentence = this.completeParagraphText.split(/[.!?]/)[0] + '.';
+                    console.log('📱 Fallback text:', firstSentence);
+                    
+                    await this.speak(firstSentence, { 
+                        rate: 0.5, 
+                        volume: 1.0, 
+                        pitch: 1.0 
+                    });
+                    console.log('✅ Mobile fallback successful');
                 } catch (fallbackError) {
-                    console.error('Mobile fallback also failed:', fallbackError);
+                    console.error('❌ Mobile fallback also failed:', fallbackError);
+                    
+                    // Final fallback: Try with a simple test phrase
+                    try {
+                        await this.speak('The paragraph is ready to read.', { rate: 0.5 });
+                        console.log('✅ Simple test phrase worked');
+                    } catch (finalError) {
+                        console.error('❌ Even simple phrase failed:', finalError);
+                    }
                 }
             }
         } finally {
@@ -727,6 +839,29 @@ class SpellingQuiz {
                 playBtn.textContent = '🔊 Listen to Paragraph';
             }
         }
+    }
+
+    createMobileParagraphChunks(text) {
+        // For mobile, create a shorter, more digestible version
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        
+        if (sentences.length === 0) return text;
+        
+        // Take first 2 sentences or first 150 characters, whichever is shorter
+        let result = '';
+        for (const sentence of sentences) {
+            const potential = result + sentence.trim() + '. ';
+            if (potential.length <= 150) {
+                result = potential;
+            } else {
+                break;
+            }
+            
+            // Stop after 2 sentences for mobile
+            if (sentences.indexOf(sentence) >= 1) break;
+        }
+        
+        return result.trim() || text.substring(0, 150);
     }
 
     async playWord(word, index) {
