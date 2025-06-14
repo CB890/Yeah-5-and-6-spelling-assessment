@@ -31,21 +31,49 @@ class SpellingQuiz {
             // Wait for voices to load
             const setVoice = () => {
                 const voices = this.speechSynthesis.getVoices();
-                // Prefer female voices, fallback to first available
-                const femaleVoice = voices.find(voice => 
-                    voice.name.toLowerCase().includes('female') ||
-                    voice.name.toLowerCase().includes('woman') ||
-                    voice.name.toLowerCase().includes('samantha') ||
-                    voice.name.toLowerCase().includes('susan') ||
-                    voice.name.toLowerCase().includes('karen') ||
-                    voice.gender === 'female'
+                
+                // Helper function to check if voice is female
+                const isFemaleVoice = (voice) => {
+                    const name = voice.name.toLowerCase();
+                    return name.includes('female') || name.includes('woman') || 
+                           name.includes('kate') || name.includes('serena') || 
+                           name.includes('stephanie') || name.includes('fiona') || 
+                           name.includes('samantha') || name.includes('susan') || 
+                           name.includes('karen') || name.includes('victoria') ||
+                           name.includes('emma') || name.includes('olivia') ||
+                           name.includes('sophia') || name.includes('emily');
+                };
+                
+                // Priority 1: British female voice
+                const britishFemaleVoice = voices.find(voice => 
+                    (voice.lang === 'en-GB' || voice.lang === 'en-UK' || voice.name.toLowerCase().includes('british')) &&
+                    isFemaleVoice(voice)
                 );
                 
-                this.currentVoice = femaleVoice || voices.find(voice => 
-                    voice.lang.startsWith('en')
-                ) || voices[0];
+                // Priority 2: Any English female voice
+                const englishFemaleVoice = voices.find(voice => 
+                    voice.lang.startsWith('en') && isFemaleVoice(voice)
+                );
                 
-                console.log('Selected voice:', this.currentVoice?.name || 'Default');
+                // Priority 3: Any female voice (any language)
+                const anyFemaleVoice = voices.find(voice => isFemaleVoice(voice));
+                
+                // Final fallback: first available voice (only if no female voices exist)
+                this.currentVoice = britishFemaleVoice || englishFemaleVoice || anyFemaleVoice || voices[0];
+                
+                console.log('✅ Selected voice:', this.currentVoice?.name || 'Default');
+                console.log('🇬🇧 Voice language:', this.currentVoice?.lang || 'Unknown');
+                console.log('👩 Voice type:', this.getVoiceType(this.currentVoice));
+                
+                if (britishFemaleVoice) {
+                    console.log('🎯 Perfect: British female voice selected!');
+                } else if (englishFemaleVoice) {
+                    console.log('✅ Good: English female voice selected!');
+                } else if (anyFemaleVoice) {
+                    console.log('⚠️ OK: Female voice selected (non-English)');
+                } else {
+                    console.log('❌ Warning: No female voices available, using default');
+                }
             };
 
             // Set voice immediately if available, otherwise wait for voices to load
@@ -90,6 +118,43 @@ class SpellingQuiz {
             this.speechSynthesis.cancel();
         }
     }
+
+    getVoiceType(voice) {
+        if (!voice) return 'Unknown';
+        
+        const name = voice.name.toLowerCase();
+        const lang = voice.lang;
+        
+        let type = '';
+        
+        // Determine accent
+        if (lang === 'en-GB' || lang === 'en-UK' || name.includes('british') || name.includes('uk')) {
+            type += 'British English';
+        } else if (lang === 'en-US' || name.includes('american') || name.includes('us')) {
+            type += 'American English';
+        } else if (lang === 'en-AU' || name.includes('australian')) {
+            type += 'Australian English';
+        } else if (lang.startsWith('en')) {
+            type += 'English';
+        } else {
+            type += lang;
+        }
+        
+        // Determine gender
+        if (name.includes('female') || name.includes('woman') || voice.gender === 'female' ||
+            name.includes('kate') || name.includes('serena') || name.includes('stephanie') ||
+            name.includes('fiona') || name.includes('samantha') || name.includes('susan') ||
+            name.includes('karen')) {
+            type += ' (Female)';
+        } else if (name.includes('male') || name.includes('man') || voice.gender === 'male' ||
+                   name.includes('daniel') || name.includes('david') || name.includes('alex')) {
+            type += ' (Male)';
+        }
+        
+        return type;
+    }
+
+
 
     bindEvents() {
         console.log('Binding events...');

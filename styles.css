@@ -315,6 +315,42 @@ header h1 {
 .audio-controls {
     text-align: center;
     margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.voice-selector {
+    padding: 10px 15px;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    min-width: 200px;
+}
+
+.voice-selector:focus {
+    outline: none;
+    border-color: #26de81;
+    box-shadow: 0 0 0 3px rgba(38, 222, 129, 0.3), 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.voice-selector option {
+    padding: 8px;
+    background: white;
+    color: #333;
+}
+
+.voice-selector optgroup {
+    font-weight: bold;
+    color: #4a90e2;
 }
 
 .paragraph-text {
@@ -768,6 +804,13 @@ header h1 {
         flex-wrap: wrap;
         gap: 10px;
         margin: 20px 0;
+        flex-direction: column;
+    }
+
+    .voice-selector {
+        min-width: 250px;
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 12px 15px;
     }
 
     .btn {
