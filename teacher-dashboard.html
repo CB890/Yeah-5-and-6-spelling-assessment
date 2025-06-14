@@ -375,6 +375,9 @@
         <div id="schoolInfo" class="school-info" style="display: none;">
             <h3 id="schoolName">Loading school...</h3>
             <p id="schoolCode">School Code: ---</p>
+            <p style="font-size: 0.9em; color: #1976d2; margin-top: 10px;">
+                📊 <strong>Showing data for this school only</strong> - Other schools' data is kept separate
+            </p>
         </div>
 
         <div id="loadingSpinner" class="loading">
@@ -597,7 +600,25 @@
                 const schoolName = document.getElementById('schoolName');
                 const schoolCode = document.getElementById('schoolCode');
                 
-                if (window.databaseService && window.databaseService.currentSchool) {
+                // Get the authenticated teacher's school
+                const teacherSchool = sessionStorage.getItem('teacherSchool');
+                const teacherSchoolCode = sessionStorage.getItem('teacherSchoolCode');
+                
+                if (teacherSchool && teacherSchoolCode) {
+                    schoolName.textContent = `🏫 ${teacherSchool}`;
+                    schoolCode.textContent = `School Code: ${teacherSchoolCode}`;
+                    schoolInfo.style.display = 'block';
+                    
+                    // Check if this is an admin user
+                    if (teacherSchoolCode === 'ADMIN') {
+                        this.isAdmin = true;
+                        schoolInfo.querySelector('p:last-child').innerHTML = 
+                            '👑 <strong>Administrator View</strong> - Showing data from all schools';
+                    }
+                    
+                    // Set the school context for database queries
+                    this.setSchoolContext(teacherSchoolCode);
+                } else if (window.databaseService && window.databaseService.currentSchool) {
                     const school = window.databaseService.currentSchool;
                     schoolName.textContent = `🏫 ${school.school_name}`;
                     schoolCode.textContent = `School Code: ${school.school_code}`;
@@ -605,17 +626,57 @@
                 }
             }
 
+            async setSchoolContext(schoolCode) {
+                try {
+                    // Look up the school in the database to get the school ID
+                    const { data: schoolData, error } = await window.databaseService.supabase
+                        .from('schools')
+                        .select('*')
+                        .eq('school_code', schoolCode)
+                        .single();
+
+                    if (error) {
+                        console.error('❌ Could not find school:', error);
+                        return;
+                    }
+
+                    // Set the current school context for filtering
+                    this.currentSchoolId = schoolData.id;
+                    this.currentSchoolData = schoolData;
+                    
+                    console.log('🏫 Set school context:', schoolData.school_name, 'ID:', schoolData.id);
+                    
+                } catch (error) {
+                    console.error('❌ Error setting school context:', error);
+                }
+            }
+
             async loadDashboardData() {
                 try {
                     console.log('📊 Loading quiz data...');
                     
-                    // Get quiz sessions from database with basic query
-                    const { data: quizData, error: quizError } = await window.databaseService.supabase
+                    let quizQuery = window.databaseService.supabase
                         .from('quiz_sessions')
                         .select('*')
-                        .eq('school_id', window.databaseService.currentSchool.id)
                         .order('created_at', { ascending: false })
                         .limit(50);
+                    
+                    // Filter by school unless user is admin
+                    if (!this.isAdmin) {
+                        const schoolId = this.currentSchoolId || window.databaseService.currentSchool?.id;
+                        
+                        if (!schoolId) {
+                            throw new Error('No school context available for data filtering');
+                        }
+                        
+                        console.log('🏫 Loading data for school ID:', schoolId);
+                        quizQuery = quizQuery.eq('school_id', schoolId);
+                    } else {
+                        console.log('👑 Loading data for all schools (admin view)');
+                    }
+                    
+                    // Execute the query
+                    const { data: quizData, error: quizError } = await quizQuery;
 
                     if (quizError) {
                         throw quizError;
@@ -647,10 +708,20 @@
                     try {
                         console.log('🔍 Checking word_responses table...');
                         
-                        const { data: wordData, error: wordError } = await window.databaseService.supabase
+                        // Get word responses for the loaded quiz sessions
+                        const quizSessionIds = this.quizData.map(quiz => quiz.id);
+                        
+                        let wordQuery = window.databaseService.supabase
                             .from('word_responses')
                             .select('*')
-                            .limit(100);
+                            .limit(1000);
+                        
+                        // Filter by quiz sessions if we have any
+                        if (quizSessionIds.length > 0) {
+                            wordQuery = wordQuery.in('quiz_session_id', quizSessionIds);
+                        }
+                        
+                        const { data: wordData, error: wordError } = await wordQuery;
 
                         console.log('📊 Word responses query result:', { wordData, wordError });
                         console.log('📊 Word data length:', wordData?.length || 0);
@@ -722,7 +793,7 @@
                     return;
                 }
 
-                // Create table
+                // Create table with school column for admin users
                 let html = `
                     <table class="quiz-table">
                         <thead>
@@ -733,6 +804,7 @@
                                 <th>⚡ First Attempt</th>
                                 <th>⏱️ Time</th>
                                 <th>📖 Paragraph</th>
+                                ${this.isAdmin ? '<th>🏫 School</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
@@ -767,6 +839,7 @@
                             <td>${quiz.total_correct || 0}/${quiz.total_questions || 0}</td>
                             <td>N/A</td>
                             <td>${quiz.paragraph_title || 'Unknown'}</td>
+                            ${this.isAdmin ? `<td>${this.getSchoolName(quiz.school_id)}</td>` : ''}
                         </tr>
                     `;
                 });
@@ -839,6 +912,15 @@
                 if (score >= 75) return 'good';
                 if (score >= 60) return 'fair';
                 return 'needs-work';
+            }
+
+            getSchoolName(schoolId) {
+                // Simple mapping for now - could be enhanced to load from database
+                const schoolMap = {
+                    '1': 'Kent College',
+                    '2': 'Victory Heights Primary'
+                };
+                return schoolMap[schoolId] || `School ${schoolId}`;
             }
 
             hideLoading() {
