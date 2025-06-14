@@ -549,10 +549,10 @@
                     // Update connection status
                     this.updateConnectionStatus(true);
                     
-                    // Load school information
-                    this.showSchoolInfo();
+                    // Load school information and wait for it to complete
+                    await this.showSchoolInfo();
                     
-                    // Load all the quiz data
+                    // Load all the quiz data (now that school context is set)
                     await this.loadDashboardData();
                     
                     console.log('✅ Dashboard ready!');
@@ -595,7 +595,7 @@
                 }
             }
 
-            showSchoolInfo() {
+            async showSchoolInfo() {
                 const schoolInfo = document.getElementById('schoolInfo');
                 const schoolName = document.getElementById('schoolName');
                 const schoolCode = document.getElementById('schoolCode');
@@ -616,8 +616,8 @@
                             '👑 <strong>Administrator View</strong> - Showing data from all schools';
                     }
                     
-                    // Set the school context for database queries
-                    this.setSchoolContext(teacherSchoolCode);
+                    // Set the school context for database queries and WAIT for it
+                    await this.setSchoolContext(teacherSchoolCode);
                 } else if (window.databaseService && window.databaseService.currentSchool) {
                     const school = window.databaseService.currentSchool;
                     schoolName.textContent = `🏫 ${school.school_name}`;
@@ -628,6 +628,8 @@
 
             async setSchoolContext(schoolCode) {
                 try {
+                    console.log('🔍 Looking up school with code:', schoolCode);
+                    
                     // Look up the school in the database to get the school ID
                     const { data: schoolData, error } = await window.databaseService.supabase
                         .from('schools')
@@ -637,6 +639,13 @@
 
                     if (error) {
                         console.error('❌ Could not find school:', error);
+                        console.error('Error details:', error);
+                        
+                        // Fallback: try to get all schools to see what's available
+                        const { data: allSchools } = await window.databaseService.supabase
+                            .from('schools')
+                            .select('*');
+                        console.log('📋 Available schools in database:', allSchools);
                         return;
                     }
 
@@ -644,7 +653,10 @@
                     this.currentSchoolId = schoolData.id;
                     this.currentSchoolData = schoolData;
                     
-                    console.log('🏫 Set school context:', schoolData.school_name, 'ID:', schoolData.id);
+                    console.log('✅ Successfully set school context:');
+                    console.log('   School Name:', schoolData.school_name);
+                    console.log('   School ID:', schoolData.id);
+                    console.log('   School Code:', schoolData.school_code);
                     
                 } catch (error) {
                     console.error('❌ Error setting school context:', error);
@@ -665,6 +677,12 @@
                     if (!this.isAdmin) {
                         const schoolId = this.currentSchoolId || window.databaseService.currentSchool?.id;
                         
+                        console.log('🔍 School filtering debug:');
+                        console.log('   this.currentSchoolId:', this.currentSchoolId);
+                        console.log('   window.databaseService.currentSchool:', window.databaseService.currentSchool);
+                        console.log('   Final schoolId for filtering:', schoolId);
+                        console.log('   this.isAdmin:', this.isAdmin);
+                        
                         if (!schoolId) {
                             throw new Error('No school context available for data filtering');
                         }
@@ -679,11 +697,19 @@
                     const { data: quizData, error: quizError } = await quizQuery;
 
                     if (quizError) {
+                        console.error('❌ Quiz query error:', quizError);
                         throw quizError;
                     }
 
                     this.quizData = quizData || [];
                     console.log('📈 Loaded', this.quizData.length, 'quiz sessions');
+                    
+                    // Debug: Show which school IDs are in the returned data
+                    if (this.quizData.length > 0) {
+                        const schoolIds = [...new Set(this.quizData.map(q => q.school_id))];
+                        console.log('🏫 School IDs in returned data:', schoolIds);
+                        console.log('🎯 Expected school ID:', this.currentSchoolId);
+                    }
                     
                     // Debug: Show sample quiz data with detailed structure
                     if (this.quizData.length > 0) {
