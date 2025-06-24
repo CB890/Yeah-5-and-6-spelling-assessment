@@ -1160,4 +1160,216 @@ header h1 {
     #quiz-container {
         box-shadow: none;
     }
+}
+
+/* Add iOS/Mobile specific styles at the end of the file */
+
+/* iOS-specific Audio Controls */
+@media screen and (max-width: 768px) {
+    /* Mobile audio controls */
+    .audio-controls {
+        text-align: center;
+        margin: 20px 0;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-audio {
+        min-height: 50px !important;
+        font-size: 16px !important;
+        padding: 12px 20px !important;
+        border-radius: 25px !important;
+        min-width: 200px;
+        margin: 10px auto;
+        display: block;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-audio:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-audio:disabled {
+        opacity: 0.7;
+        transform: none !important;
+        cursor: not-allowed;
+    }
+    
+    /* Individual word audio buttons */
+    .word-audio-controls .btn {
+        min-height: 44px; /* iOS recommended minimum touch target */
+        padding: 8px 15px;
+        font-size: 14px;
+        margin: 5px;
+    }
+    
+    /* Answer inputs for better mobile usability */
+    .answer-input {
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 12px !important;
+        border-radius: 8px !important;
+        min-height: 44px;
+    }
+    
+    /* Paragraph display on mobile */
+    .paragraph-text {
+        font-size: 18px;
+        line-height: 1.6;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        margin: 15px 0;
+    }
+    
+    /* Progress bar visibility on mobile */
+    .progress-container {
+        margin: 15px 0;
+        padding: 0 10px;
+    }
+    
+    .progress-text {
+        font-size: 14px;
+        text-align: center;
+        margin-top: 8px;
+    }
+}
+
+/* iOS-specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    
+    .btn-audio {
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        border: none;
+    }
+    
+    .answer-input {
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        border-radius: 8px;
+    }
+    
+    /* Fix for iOS viewport units */
+    .screen {
+        min-height: -webkit-fill-available;
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input[type="text"], 
+    input[type="email"], 
+    input[type="password"],
+    select, 
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* Audio feedback notifications for mobile */
+.tts-feedback {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 1000;
+    max-width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.3s ease-out;
+}
+
+.tts-feedback.success {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.tts-feedback.error {
+    background: linear-gradient(135deg, #FF5722, #e64a19);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Enhanced mobile quiz interface */
+@media screen and (max-width: 768px) {
+    .quiz-container {
+        padding: 10px;
+    }
+    
+    .paragraph-container h3 {
+        font-size: 20px;
+        text-align: center;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+    
+    .answers-container h4 {
+        font-size: 18px;
+        text-align: center;
+        margin: 20px 0 15px 0;
+        color: #34495e;
+    }
+    
+    .quiz-controls {
+        text-align: center;
+        padding: 20px 0;
+        gap: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .quiz-controls .btn {
+        margin: 5px;
+        min-width: 150px;
+    }
+    
+    /* Word blanks styling for mobile */
+    .word-blank {
+        display: inline-block;
+        margin: 0 3px;
+        padding: 2px 4px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 4px;
+        font-weight: bold;
+    }
+}
+
+/* Accessibility improvements for mobile */
+@media (prefers-reduced-motion: reduce) {
+    .btn-audio {
+        animation: none !important;
+    }
+    
+    .tts-feedback {
+        animation: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn-audio {
+        border: 2px solid currentColor;
+    }
+    
+    .tts-feedback {
+        border: 2px solid white;
+    }
 } 

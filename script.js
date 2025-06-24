@@ -14,6 +14,11 @@ class SpellingQuiz {
         this.quizEndTime = null;
         this.currentAnswers = {};
         this.answeredWordsCount = 0;
+        this.isIOS = this.detectIOS();
+        this.isMobile = this.detectMobile();
+        this.audioContext = null;
+        this.speechInitialized = false;
+        this.mobileAudioReady = false;
         this.init();
     }
 
@@ -23,25 +28,81 @@ class SpellingQuiz {
         this.showScreen('start-screen');
     }
 
+    detectIOS() {
+        return /iPhone|iPad|iPod/.test(navigator.userAgent);
+    }
+
+    detectMobile() {
+        return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    }
+
     initializeAudio() {
         // Check if speech synthesis is supported
         if ('speechSynthesis' in window) {
             this.isAudioEnabled = true;
-            this.isMobile = this.detectMobile();
-            this.speechInitialized = false;
             
-            console.log('📱 Mobile device detected:', this.isMobile);
+            console.log('🔊 TTS Support detected');
+            console.log('📱 Device type:', {
+                isIOS: this.isIOS,
+                isMobile: this.isMobile,
+                userAgent: navigator.userAgent.substring(0, 50) + '...'
+            });
             
-            // Wait for voices to load
-            const setVoice = () => {
-                const voices = this.speechSynthesis.getVoices();
-                
-                if (voices.length === 0) {
-                    console.log('⏳ No voices available yet, waiting...');
-                    return;
+            // Initialize AudioContext for iOS compatibility
+            if (this.isIOS && window.AudioContext) {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('🎵 AudioContext initialized for iOS');
+                } catch (error) {
+                    console.warn('⚠️ Could not initialize AudioContext:', error);
                 }
+            }
+            
+            // Setup voice selection with iOS-specific handling
+            this.setupVoiceSelection();
+            
+            // Mobile requires user interaction before speech works
+            if (this.isMobile) {
+                this.setupMobileAudioInitialization();
+            }
+        } else {
+            console.warn('❌ Speech synthesis not supported in this browser');
+            this.isAudioEnabled = false;
+        }
+    }
+
+    setupVoiceSelection() {
+        const initializeVoices = () => {
+            const voices = this.speechSynthesis.getVoices();
+            
+            if (voices.length === 0) {
+                console.log('⏳ No voices available yet, waiting...');
+                return false;
+            }
+            
+            console.log(`🎭 Found ${voices.length} voices:`, voices.map(v => ({
+                name: v.name,
+                lang: v.lang,
+                localService: v.localService,
+                default: v.default
+            })));
+            
+            // iOS-specific voice selection logic
+            let selectedVoice = null;
+            
+            if (this.isIOS) {
+                // iOS voice priority: local English voices work best
+                selectedVoice = voices.find(v => 
+                    v.lang.startsWith('en') && 
+                    v.localService === true
+                ) || voices.find(v => 
+                    v.lang.startsWith('en')
+                ) || voices[0];
                 
-                // Helper function to check if voice is female
+                console.log('🍎 iOS voice selected:', selectedVoice?.name);
+            } else {
+                // Desktop/Android voice selection (existing logic)
                 const isFemaleVoice = (voice) => {
                     const name = voice.name.toLowerCase();
                     return name.includes('female') || name.includes('woman') || 
@@ -53,257 +114,301 @@ class SpellingQuiz {
                            name.includes('sophia') || name.includes('emily');
                 };
                 
-                // Priority 1: British female voice
                 const britishFemaleVoice = voices.find(voice => 
                     (voice.lang === 'en-GB' || voice.lang === 'en-UK' || voice.name.toLowerCase().includes('british')) &&
                     isFemaleVoice(voice)
                 );
                 
-                // Priority 2: Any English female voice
                 const englishFemaleVoice = voices.find(voice => 
                     voice.lang.startsWith('en') && isFemaleVoice(voice)
                 );
                 
-                // Priority 3: Any female voice (any language)
                 const anyFemaleVoice = voices.find(voice => isFemaleVoice(voice));
                 
-                // Final fallback: first available voice (only if no female voices exist)
-                this.currentVoice = britishFemaleVoice || englishFemaleVoice || anyFemaleVoice || voices[0];
-                
-                console.log('✅ Selected voice:', this.currentVoice?.name || 'Default');
-                console.log('🇬🇧 Voice language:', this.currentVoice?.lang || 'Unknown');
-                console.log('👩 Voice type:', this.getVoiceType(this.currentVoice));
-                
-                if (britishFemaleVoice) {
-                    console.log('🎯 Perfect: British female voice selected!');
-                } else if (englishFemaleVoice) {
-                    console.log('✅ Good: English female voice selected!');
-                } else if (anyFemaleVoice) {
-                    console.log('⚠️ OK: Female voice selected (non-English)');
-                } else {
-                    console.log('❌ Warning: No female voices available, using default');
-                }
-                
-                this.speechInitialized = true;
-            };
-
-            // Mobile-specific initialization
-            if (this.isMobile) {
-                // On mobile, voices might not be available immediately
-                // Try multiple times with delays
-                let attempts = 0;
-                const trySetVoice = () => {
-                    attempts++;
-                    const voices = this.speechSynthesis.getVoices();
-                    
-                    if (voices.length > 0) {
-                        setVoice();
-                    } else if (attempts < 10) {
-                        setTimeout(trySetVoice, 500);
-                    } else {
-                        console.warn('📱 Mobile: Could not load voices after multiple attempts');
-                        this.isAudioEnabled = false;
-                    }
-                };
-                
-                // Start trying immediately and also listen for voice changes
-                trySetVoice();
-                this.speechSynthesis.addEventListener('voiceschanged', setVoice);
-                
-                // Mobile requires user interaction before speech works
-                this.initializeMobileSpeech();
-            } else {
-                // Desktop initialization
-                if (this.speechSynthesis.getVoices().length > 0) {
-                    setVoice();
-                } else {
-                    this.speechSynthesis.addEventListener('voiceschanged', setVoice);
-                }
+                selectedVoice = britishFemaleVoice || englishFemaleVoice || anyFemaleVoice || voices[0];
             }
-        } else {
-            console.warn('Speech synthesis not supported in this browser');
-            this.isAudioEnabled = false;
+            
+            this.currentVoice = selectedVoice;
+            this.speechInitialized = true;
+            
+            console.log('✅ Final voice selection:', {
+                name: this.currentVoice?.name || 'Default',
+                lang: this.currentVoice?.lang || 'Unknown',
+                localService: this.currentVoice?.localService,
+                isIOS: this.isIOS
+            });
+            
+            return true;
+        };
+
+        // Try immediate initialization
+        if (!initializeVoices()) {
+            // If no voices available, wait for voiceschanged event
+            let attempts = 0;
+            const maxAttempts = this.isMobile ? 15 : 5;
+            
+            const tryAgain = () => {
+                attempts++;
+                if (initializeVoices()) {
+                    return; // Success
+                }
+                
+                if (attempts < maxAttempts) {
+                    setTimeout(tryAgain, 500);
+                } else {
+                    console.warn('⚠️ Could not load voices after multiple attempts');
+                    this.speechInitialized = true; // Continue without voice selection
+                }
+            };
+            
+            this.speechSynthesis.addEventListener('voiceschanged', initializeVoices);
+            setTimeout(tryAgain, 100);
         }
     }
 
-    detectMobile() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-               (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-    }
-
-    initializeMobileSpeech() {
-        // Mobile browsers require user interaction before speech synthesis works
-        this.mobileAudioReady = false;
+    setupMobileAudioInitialization() {
+        console.log('📱 Setting up mobile audio initialization');
         
-        const enableMobileAudio = () => {
-            if (!this.mobileAudioReady) {
-                // Test speech synthesis with a silent utterance
+        const enableMobileAudio = async () => {
+            if (this.mobileAudioReady) return;
+            
+            try {
+                // Initialize AudioContext on iOS if needed
+                if (this.isIOS && this.audioContext && this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                    console.log('🎵 iOS AudioContext resumed');
+                }
+                
+                // Test speech synthesis with silent utterance
                 const testUtterance = new SpeechSynthesisUtterance('');
                 testUtterance.volume = 0;
+                testUtterance.rate = 1;
+                testUtterance.pitch = 1;
+                
+                // Add a short delay for iOS
+                if (this.isIOS) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
                 this.speechSynthesis.speak(testUtterance);
                 this.mobileAudioReady = true;
-                console.log('📱 Mobile audio initialized');
+                
+                console.log('📱 Mobile audio initialization successful');
+                
+                // Update UI to show audio is ready
+                this.updateAudioControlsForMobile();
+                
+            } catch (error) {
+                console.error('❌ Mobile audio initialization failed:', error);
             }
         };
         
         // Add listeners to common interaction events
-        ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
-            document.addEventListener(event, enableMobileAudio, { once: true, passive: true });
+        const events = ['touchstart', 'touchend', 'click', 'keydown'];
+        events.forEach(event => {
+            document.addEventListener(event, enableMobileAudio, { 
+                once: true, 
+                passive: true 
+            });
         });
     }
 
-    speak(text, options = {}) {
+    updateAudioControlsForMobile() {
+        // Show mobile-specific play button if needed
+        if (this.isMobile) {
+            const playBtn = document.getElementById('play-paragraph');
+            if (playBtn && this.mobileAudioReady) {
+                playBtn.style.background = '#4CAF50';
+                playBtn.title = 'Tap to hear the paragraph (Audio Ready)';
+            }
+        }
+    }
+
+    async speak(text, options = {}) {
         if (!this.isAudioEnabled || !text) {
-            console.log('❌ Speech not available:', { audioEnabled: this.isAudioEnabled, hasText: !!text });
+            console.log('❌ Speech not available:', { 
+                audioEnabled: this.isAudioEnabled, 
+                hasText: !!text 
+            });
             return Promise.resolve();
+        }
+
+        // Wait for speech initialization
+        if (!this.speechInitialized) {
+            console.log('⏳ Waiting for speech initialization...');
+            await this.waitForSpeechInit();
         }
 
         console.log('🔊 Starting speech:', { 
             textLength: text.length, 
-            isMobile: this.isMobile, 
+            isIOS: this.isIOS,
+            isMobile: this.isMobile,
             voice: this.currentVoice?.name,
             options 
         });
 
-        return new Promise((resolve) => {
-            // Stop any current speech
-            this.speechSynthesis.cancel();
-            
-            // Mobile compatibility: Small delay to ensure synthesis is ready
-            setTimeout(() => {
-                let textToSpeak = text;
+        return new Promise((resolve, reject) => {
+            try {
+                // Stop any current speech
+                this.speechSynthesis.cancel();
                 
-                // Mobile-specific: Handle long text differently
-                if (this.isMobile && text.length > 200) {
-                    console.log('📱 Mobile: Chunking long text');
-                    textToSpeak = this.chunkTextForMobile(text);
-                }
-                
-                const utterance = new SpeechSynthesisUtterance(textToSpeak);
-                
-                // Configure utterance with mobile-optimized settings
-                utterance.voice = this.currentVoice;
-                utterance.rate = options.rate || (this.isMobile ? 0.6 : 0.8);
-                utterance.pitch = options.pitch || 1.0;
-                utterance.volume = options.volume || 1.0;
-                
-                console.log('🔊 Speech settings:', {
-                    voice: utterance.voice?.name,
-                    rate: utterance.rate,
-                    pitch: utterance.pitch,
-                    volume: utterance.volume,
-                    textLength: textToSpeak.length
-                });
-                
-                let resolved = false;
-                
-                utterance.onstart = () => {
-                    console.log('🔊 Speech started');
-                };
-                
-                utterance.onend = () => {
-                    console.log('✅ Speech ended normally');
-                    if (!resolved) {
-                        resolved = true;
-                        resolve();
-                    }
-                };
-                
-                utterance.onerror = (error) => {
-                    console.error('❌ Speech synthesis error:', error);
-                    if (!resolved) {
-                        resolved = true;
-                        resolve();
-                    }
-                };
-                
-                // Mobile fallback: Resolve after timeout if speech doesn't complete
-                const timeoutDuration = this.isMobile ? 
-                    Math.min(textToSpeak.length * 150, 10000) : // Mobile: max 10 seconds
-                    Math.max(textToSpeak.length * 100, 5000);   // Desktop: based on length
+                // iOS-specific delay to ensure synthesis is ready
+                const delay = this.isIOS ? 150 : 50;
                 
                 setTimeout(() => {
-                    if (!resolved) {
-                        console.warn('⏰ Speech timeout after', timeoutDuration, 'ms - resolving anyway');
-                        resolved = true;
-                        resolve();
+                    try {
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        
+                        // iOS-optimized settings
+                        if (this.isIOS) {
+                            utterance.voice = this.currentVoice;
+                            utterance.rate = options.rate || 0.7;
+                            utterance.pitch = options.pitch || 1.0;
+                            utterance.volume = options.volume || 0.9;
+                        } else {
+                            utterance.voice = this.currentVoice;
+                            utterance.rate = options.rate || 0.8;
+                            utterance.pitch = options.pitch || 1.0;
+                            utterance.volume = options.volume || 1.0;
+                        }
+                        
+                        let resolved = false;
+                        const timeout = setTimeout(() => {
+                            if (!resolved) {
+                                resolved = true;
+                                console.warn('⏰ Speech timeout, resolving anyway');
+                                resolve();
+                            }
+                        }, text.length * 100 + 5000); // Generous timeout
+                        
+                        utterance.onstart = () => {
+                            console.log('✅ Speech started successfully');
+                        };
+                        
+                        utterance.onend = () => {
+                            clearTimeout(timeout);
+                            if (!resolved) {
+                                resolved = true;
+                                console.log('✅ Speech completed successfully');
+                                resolve();
+                            }
+                        };
+                        
+                        utterance.onerror = (event) => {
+                            clearTimeout(timeout);
+                            if (!resolved) {
+                                resolved = true;
+                                console.error('❌ Speech error:', event.error);
+                                
+                                // Try fallback for iOS
+                                if (this.isIOS && event.error === 'interrupted') {
+                                    console.log('🍎 iOS interrupted error, trying fallback...');
+                                    this.iosSpeechFallback(text, options).then(resolve).catch(reject);
+                                } else {
+                                    resolve(); // Don't reject, just continue silently
+                                }
+                            }
+                        };
+                        
+                        // Start speaking
+                        this.speechSynthesis.speak(utterance);
+                        
+                    } catch (error) {
+                        console.error('❌ Error creating speech utterance:', error);
+                        reject(error);
                     }
-                }, timeoutDuration);
+                }, delay);
                 
-                // Mobile compatibility: Ensure voice is set before speaking
-                if (this.currentVoice && this.speechSynthesis.getVoices().length > 0) {
-                    utterance.voice = this.currentVoice;
-                    console.log('🔊 Voice confirmed:', this.currentVoice.name);
-                } else {
-                    console.warn('⚠️ No voice available');
-                }
-                
-                try {
-                    this.speechSynthesis.speak(utterance);
-                    console.log('🔊 Speech synthesis started');
-                } catch (error) {
-                    console.error('❌ Failed to start speech synthesis:', error);
-                    if (!resolved) {
-                        resolved = true;
-                        resolve();
-                    }
-                }
-                
-            }, this.isMobile ? 200 : 100); // Longer delay for mobile
+            } catch (error) {
+                console.error('❌ Error in speak method:', error);
+                reject(error);
+            }
         });
     }
 
-    chunkTextForMobile(text) {
-        console.log('📱 Chunking text for mobile:', text.length, 'characters');
+    async iosSpeechFallback(text, options = {}) {
+        console.log('🍎 Attempting iOS speech fallback...');
         
-        // For mobile, use shorter chunks
-        const maxChunkLength = 150;
-        if (text.length <= maxChunkLength) {
-            console.log('📱 Text is short enough, no chunking needed');
-            return text;
+        return new Promise((resolve) => {
+            try {
+                // Try with even simpler settings
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.6;
+                utterance.volume = 0.8;
+                utterance.pitch = 1.0;
+                
+                // Don't set voice for fallback - use system default
+                
+                utterance.onend = () => {
+                    console.log('✅ iOS fallback speech completed');
+                    resolve();
+                };
+                
+                utterance.onerror = () => {
+                    console.log('❌ iOS fallback also failed, continuing silently');
+                    resolve();
+                };
+                
+                setTimeout(() => {
+                    this.speechSynthesis.speak(utterance);
+                }, 200);
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    console.log('⏰ iOS fallback timeout');
+                    resolve();
+                }, 8000);
+                
+            } catch (error) {
+                console.error('❌ iOS fallback error:', error);
+                resolve();
+            }
+        });
+    }
+
+    async waitForSpeechInit(maxWait = 5000) {
+        const startTime = Date.now();
+        while (!this.speechInitialized && (Date.now() - startTime) < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
-        // Try to break at sentence boundaries first
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        console.log('📱 Found', sentences.length, 'sentences');
-        
-        if (sentences.length === 0) {
-            console.log('📱 No sentences found, using substring');
-            return text.substring(0, maxChunkLength);
-        }
-        
-        // Take the first complete sentence that fits
-        let result = '';
-        for (let i = 0; i < sentences.length; i++) {
-            const sentence = sentences[i].trim();
-            const potential = result + sentence + '. ';
+    }
+
+    showMobilePlayButton() {
+        const playBtn = document.getElementById('play-paragraph');
+        if (playBtn) {
+            // Make the button more prominent for mobile
+            playBtn.style.cssText = `
+                background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+                color: white;
+                font-size: 18px;
+                padding: 15px 25px;
+                border-radius: 25px;
+                border: none;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                animation: pulse 2s infinite;
+                margin: 20px 0;
+                display: block;
+                width: 100%;
+                max-width: 300px;
+                margin: 20px auto;
+            `;
+            playBtn.innerHTML = '🎧 Tap to Listen to Paragraph';
+            playBtn.title = 'Tap here to hear the paragraph read aloud';
             
-            if (potential.length <= maxChunkLength) {
-                result = potential;
-                console.log('📱 Added sentence', i + 1, '- total length:', result.length);
-            } else {
-                console.log('📱 Sentence', i + 1, 'would exceed limit, stopping');
-                break;
-            }
-            
-            // For mobile, limit to first 2 sentences max
-            if (i >= 1) {
-                console.log('📱 Limiting to 2 sentences for mobile');
-                break;
+            // Add pulse animation styles if not already added
+            if (!document.getElementById('mobile-pulse-styles')) {
+                const style = document.createElement('style');
+                style.id = 'mobile-pulse-styles';
+                style.textContent = `
+                    @keyframes pulse {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.05); }
+                        100% { transform: scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
             }
         }
-        
-        // If no sentences fit, take the first sentence even if it's long
-        if (result.trim() === '') {
-            result = sentences[0].trim() + '.';
-            if (result.length > maxChunkLength) {
-                result = result.substring(0, maxChunkLength - 3) + '...';
-            }
-            console.log('📱 Using truncated first sentence:', result.length, 'characters');
-        }
-        
-        console.log('📱 Final chunked text:', result.length, 'characters -', result.substring(0, 50) + '...');
-        return result.trim();
     }
 
     stopSpeaking() {
@@ -346,8 +451,6 @@ class SpellingQuiz {
         
         return type;
     }
-
-
 
     bindEvents() {
         console.log('Binding events...');
@@ -479,11 +582,17 @@ class SpellingQuiz {
                 }));
             }
 
-            // Automatically read the paragraph after a short delay
-            setTimeout(() => {
-                console.log('Auto-playing paragraph...');
-                this.playParagraph();
-            }, 1000);
+            // iOS/Mobile: Show play button instead of auto-play
+            if (this.isMobile) {
+                console.log('📱 Mobile device detected - showing play button instead of auto-play');
+                this.showMobilePlayButton();
+            } else {
+                // Desktop: Auto-play after delay (as before)
+                setTimeout(() => {
+                    console.log('🖥️ Desktop auto-playing paragraph...');
+                    this.playParagraph();
+                }, 1000);
+            }
             
             console.log('Quiz started successfully');
             
@@ -757,123 +866,254 @@ class SpellingQuiz {
         const playBtn = document.getElementById('play-paragraph');
         if (!this.isAudioEnabled || !this.completeParagraphText) {
             console.log('❌ Audio not enabled or no paragraph text');
+            this.showTTSError('Audio not available');
             return;
         }
         
-        console.log('📱 Mobile device:', this.isMobile);
-        console.log('📝 Paragraph text length:', this.completeParagraphText.length);
-        console.log('📝 Paragraph text:', this.completeParagraphText.substring(0, 100) + '...');
+        console.log('🔊 Starting paragraph playback:', {
+            isIOS: this.isIOS,
+            isMobile: this.isMobile,
+            textLength: this.completeParagraphText.length,
+            audioReady: this.mobileAudioReady
+        });
         
-        // Mobile-specific: Ensure audio is ready
+        // iOS/Mobile: Ensure audio is properly initialized
         if (this.isMobile && !this.mobileAudioReady) {
-            console.log('📱 Initializing mobile audio...');
-            const testUtterance = new SpeechSynthesisUtterance('');
-            testUtterance.volume = 0;
-            this.speechSynthesis.speak(testUtterance);
-            this.mobileAudioReady = true;
-            
-            // Small delay to ensure initialization
-            await new Promise(resolve => setTimeout(resolve, 200));
+            console.log('📱 Mobile audio not ready, initializing...');
+            try {
+                await this.ensureMobileAudioReady();
+            } catch (error) {
+                console.error('❌ Failed to initialize mobile audio:', error);
+                this.showTTSError('Please tap again to enable audio');
+                return;
+            }
         }
         
-        // Update button state
+        // Update button state with mobile-friendly feedback
         if (playBtn) {
             playBtn.disabled = true;
-            playBtn.textContent = '🔊 Reading...';
+            if (this.isMobile) {
+                playBtn.innerHTML = '🔊 Reading...';
+                playBtn.style.background = '#FFA500';
+            } else {
+                playBtn.textContent = '🔊 Reading...';
+            }
         }
 
         try {
             let textToSpeak = this.completeParagraphText;
             
-            // Mobile-specific: Break long paragraphs into smaller chunks
-            if (this.isMobile && textToSpeak.length > 150) {
-                console.log('📱 Breaking paragraph into mobile-friendly chunks');
-                textToSpeak = this.createMobileParagraphChunks(textToSpeak);
+            // iOS-specific: Use shorter text for better reliability
+            if (this.isIOS && textToSpeak.length > 200) {
+                console.log('🍎 iOS: Using shorter text for better reliability');
+                textToSpeak = this.createIOSOptimizedText(textToSpeak);
             }
             
-            console.log('🔊 Speaking text:', textToSpeak.substring(0, 100) + '...');
+            console.log('🔊 Speaking text:', {
+                originalLength: this.completeParagraphText.length,
+                speakingLength: textToSpeak.length,
+                preview: textToSpeak.substring(0, 50) + '...'
+            });
             
-            // Mobile-specific: Use slower rate and ensure voice is available
+            // iOS-optimized speech options
             const speechOptions = {
-                rate: this.isMobile ? 0.6 : 0.85,
-                volume: 1.0,
+                rate: this.isIOS ? 0.7 : (this.isMobile ? 0.6 : 0.85),
+                volume: this.isIOS ? 0.9 : 1.0,
                 pitch: 1.0
             };
             
             await this.speak(textToSpeak, speechOptions);
             console.log('✅ Paragraph speech completed successfully');
             
+            // Success feedback for mobile
+            if (this.isMobile) {
+                this.showTTSSuccess();
+            }
+            
         } catch (error) {
             console.error('❌ Error playing paragraph:', error);
-            
-            // Mobile fallback: Try with even simpler settings
-            if (this.isMobile) {
-                console.log('📱 Trying mobile fallback with shorter text...');
-                try {
-                    // Try with just the first sentence
-                    const firstSentence = this.completeParagraphText.split(/[.!?]/)[0] + '.';
-                    console.log('📱 Fallback text:', firstSentence);
-                    
-                    await this.speak(firstSentence, { 
-                        rate: 0.5, 
-                        volume: 1.0, 
-                        pitch: 1.0 
-                    });
-                    console.log('✅ Mobile fallback successful');
-                } catch (fallbackError) {
-                    console.error('❌ Mobile fallback also failed:', fallbackError);
-                    
-                    // Final fallback: Try with a simple test phrase
-                    try {
-                        await this.speak('The paragraph is ready to read.', { rate: 0.5 });
-                        console.log('✅ Simple test phrase worked');
-                    } catch (finalError) {
-                        console.error('❌ Even simple phrase failed:', finalError);
-                    }
-                }
-            }
+            await this.handleTTSError(error);
         } finally {
             // Restore button state
             if (playBtn) {
                 playBtn.disabled = false;
-                playBtn.textContent = '🔊 Listen to Paragraph';
+                if (this.isMobile) {
+                    playBtn.innerHTML = '🎧 Tap to Listen to Paragraph';
+                    playBtn.style.background = 'linear-gradient(135deg, #FF6B6B, #4ECDC4)';
+                } else {
+                    playBtn.textContent = '🔊 Listen to Paragraph';
+                }
             }
         }
     }
 
-    createMobileParagraphChunks(text) {
-        // For mobile, create a shorter, more digestible version
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    async ensureMobileAudioReady() {
+        if (this.mobileAudioReady) return;
         
-        if (sentences.length === 0) return text;
-        
-        // Take first 2 sentences or first 150 characters, whichever is shorter
-        let result = '';
-        for (const sentence of sentences) {
-            const potential = result + sentence.trim() + '. ';
-            if (potential.length <= 150) {
-                result = potential;
-            } else {
-                break;
-            }
-            
-            // Stop after 2 sentences for mobile
-            if (sentences.indexOf(sentence) >= 1) break;
+        // iOS-specific AudioContext initialization
+        if (this.isIOS && this.audioContext && this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+            console.log('🎵 iOS AudioContext resumed');
         }
         
-        return result.trim() || text.substring(0, 150);
+        // Test with silent utterance
+        const testUtterance = new SpeechSynthesisUtterance('');
+        testUtterance.volume = 0;
+        testUtterance.rate = 1;
+        testUtterance.pitch = 1;
+        
+        // iOS requires extra delay
+        if (this.isIOS) {
+            await new Promise(resolve => setTimeout(resolve, 150));
+        }
+        
+        this.speechSynthesis.speak(testUtterance);
+        this.mobileAudioReady = true;
+        
+        // Additional delay for iOS to ensure everything is ready
+        if (this.isIOS) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        console.log('📱 Mobile audio initialization completed');
+    }
+
+    createIOSOptimizedText(text) {
+        // For iOS, prioritize shorter, cleaner text
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        
+        if (sentences.length === 0) return text.substring(0, 150);
+        
+        // Take first sentence that's under 150 characters
+        let result = '';
+        for (const sentence of sentences) {
+            const cleanSentence = sentence.trim();
+            if (cleanSentence.length > 0 && cleanSentence.length <= 150) {
+                result = cleanSentence + '.';
+                break;
+            }
+        }
+        
+        // If no suitable sentence found, take first sentence truncated
+        if (!result) {
+            result = sentences[0].trim();
+            if (result.length > 150) {
+                result = result.substring(0, 147) + '...';
+            } else {
+                result += '.';
+            }
+        }
+        
+        console.log('🍎 iOS optimized text:', result);
+        return result;
+    }
+
+    async handleTTSError(error) {
+        console.error('🔧 Handling TTS error:', error);
+        
+        if (this.isIOS) {
+            // iOS-specific error handling
+            console.log('🍎 Trying iOS fallback strategies...');
+            
+            try {
+                // Strategy 1: Very simple phrase
+                await this.speak('The paragraph is ready to read.', { 
+                    rate: 0.6, 
+                    volume: 0.8 
+                });
+                console.log('✅ iOS simple phrase fallback worked');
+                this.showTTSSuccess('Audio test successful');
+                return;
+            } catch (fallbackError) {
+                console.error('❌ iOS simple phrase fallback failed:', fallbackError);
+            }
+            
+            try {
+                // Strategy 2: System default voice
+                const utterance = new SpeechSynthesisUtterance('Audio is ready.');
+                utterance.rate = 0.6;
+                utterance.volume = 0.8;
+                // Don't set voice - use system default
+                
+                await new Promise((resolve) => {
+                    utterance.onend = () => {
+                        console.log('✅ iOS system voice fallback worked');
+                        resolve();
+                    };
+                    utterance.onerror = () => {
+                        console.log('❌ iOS system voice fallback failed');
+                        resolve();
+                    };
+                    setTimeout(resolve, 3000); // Timeout after 3 seconds
+                    this.speechSynthesis.speak(utterance);
+                });
+                
+                this.showTTSSuccess('Audio ready with system voice');
+                return;
+            } catch (systemVoiceError) {
+                console.error('❌ iOS system voice fallback failed:', systemVoiceError);
+            }
+        }
+        
+        // Generic error handling
+        this.showTTSError('Audio not available. Please check device volume and try again.');
+    }
+
+    showTTSSuccess(message = 'Audio played successfully') {
+        if (this.isMobile) {
+            const feedback = document.createElement('div');
+            feedback.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                background: #4CAF50; color: white; padding: 10px 20px;
+                border-radius: 20px; z-index: 1000; font-size: 14px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            `;
+            feedback.textContent = `✅ ${message}`;
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.parentNode.removeChild(feedback);
+                }
+            }, 3000);
+        }
+    }
+
+    showTTSError(message) {
+        console.warn('🔊 TTS Error:', message);
+        
+        if (this.isMobile) {
+            const feedback = document.createElement('div');
+            feedback.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                background: #FF5722; color: white; padding: 10px 20px;
+                border-radius: 20px; z-index: 1000; font-size: 14px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                text-align: center; max-width: 300px;
+            `;
+            feedback.innerHTML = `❌ ${message}`;
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.parentNode.removeChild(feedback);
+                }
+            }, 5000);
+        }
     }
 
     async playWord(word, index) {
         if (!this.isAudioEnabled) return;
         
-        // Mobile-specific: Ensure audio is ready
+        // iOS/Mobile: Ensure audio is ready
         if (this.isMobile && !this.mobileAudioReady) {
-            const testUtterance = new SpeechSynthesisUtterance('');
-            testUtterance.volume = 0;
-            this.speechSynthesis.speak(testUtterance);
-            this.mobileAudioReady = true;
-            await new Promise(resolve => setTimeout(resolve, 100));
+            try {
+                await this.ensureMobileAudioReady();
+            } catch (error) {
+                console.error('❌ Failed to initialize mobile audio for word:', error);
+                this.showTTSError('Tap the main play button first to enable audio');
+                return;
+            }
         }
         
         // Find the button for this word
@@ -886,23 +1126,34 @@ class SpellingQuiz {
         }
 
         try {
-            // Mobile-optimized speech settings
+            // iOS-optimized speech settings for individual words
             const speechOptions = {
-                rate: this.isMobile ? 0.7 : 0.8,
+                rate: this.isIOS ? 0.8 : (this.isMobile ? 0.7 : 0.8),
                 pitch: 1.1,
-                volume: 1.0
+                volume: this.isIOS ? 0.9 : 1.0
             };
             
+            console.log(`🔊 Playing word "${word}" with iOS-optimized settings`);
             await this.speak(word, speechOptions);
-        } catch (error) {
-            console.error('Error playing word:', error);
             
-            // Mobile fallback
-            if (this.isMobile) {
+        } catch (error) {
+            console.error('❌ Error playing word:', error);
+            
+            // iOS-specific fallback
+            if (this.isIOS) {
+                try {
+                    console.log('🍎 Trying iOS fallback for word:', word);
+                    await this.speak(word, { rate: 0.6, volume: 0.8 });
+                } catch (fallbackError) {
+                    console.error('❌ iOS word fallback failed:', fallbackError);
+                    this.showTTSError(`Could not play word: ${word}`);
+                }
+            } else if (this.isMobile) {
                 try {
                     await this.speak(word, { rate: 0.6 });
                 } catch (fallbackError) {
-                    console.error('Mobile word playback fallback failed:', fallbackError);
+                    console.error('❌ Mobile word playback fallback failed:', fallbackError);
+                    this.showTTSError(`Could not play word: ${word}`);
                 }
             }
         } finally {
@@ -916,6 +1167,12 @@ class SpellingQuiz {
     async playWordInContext(word, index) {
         if (!this.isAudioEnabled || !this.selectedParagraph) return;
 
+        // iOS/Mobile: Ensure audio is ready
+        if (this.isMobile && !this.mobileAudioReady) {
+            await this.playWord(word, index); // Fallback to individual word
+            return;
+        }
+
         // Find the sentence containing this word
         const sentences = this.completeParagraphText.split(/[.!?]+/);
         const wordInSentence = sentences.find(sentence => 
@@ -923,8 +1180,25 @@ class SpellingQuiz {
         );
 
         if (wordInSentence) {
-            const contextText = `Listen to the word in context: ${wordInSentence.trim()}.`;
-            await this.speak(contextText, { rate: 0.85 });
+            let contextText = `Listen to the word in context: ${wordInSentence.trim()}.`;
+            
+            // iOS optimization: Keep context short
+            if (this.isIOS && contextText.length > 100) {
+                contextText = `The word is: ${word}.`;
+            }
+            
+            const speechOptions = {
+                rate: this.isIOS ? 0.7 : 0.85,
+                volume: this.isIOS ? 0.9 : 1.0
+            };
+            
+            try {
+                await this.speak(contextText, speechOptions);
+            } catch (error) {
+                console.error('❌ Error playing word in context:', error);
+                // Fallback to just the word
+                await this.playWord(word, index);
+            }
         } else {
             // Fallback to just the word
             await this.playWord(word, index);
